@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Website Generator — Rishabh</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0A1628; color: #fff; min-height: 100vh; }
+
+/* Header */
+.header { background: linear-gradient(135deg, #0A1628, #1A3A5C); padding: 20px; text-align: center; border-bottom: 2px solid #C9A84C44; }
+.header h1 { font-size: 22px; font-weight: 900; color: #fff; }
+.header h1 span { color: #C9A84C; }
+.header p { font-size: 12px; color: #7EB8F7; margin-top: 4px; }
+
+/* Form */
+.form-wrap { padding: 20px; max-width: 600px; margin: 0 auto; }
+
+.quick-paste { background: #1A2A1A; border: 1px solid #C9A84C66; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+.quick-paste label { font-size: 12px; font-weight: 700; color: #C9A84C; display: block; margin-bottom: 8px; }
+.quick-paste textarea { width: 100%; background: #0A0A0A; color: #E8D5A3; border: 1px solid #333; border-radius: 8px; padding: 10px; font-size: 12px; font-family: monospace; resize: vertical; min-height: 80px; }
+.btn-parse { width: 100%; background: #C9A84C; color: #1A1A1A; border: none; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 700; margin-top: 10px; cursor: pointer; }
+
+.divider { text-align: center; color: #444; font-size: 12px; margin: 16px 0; }
+
+.field-group { margin-bottom: 14px; }
+.field-group label { font-size: 12px; font-weight: 600; color: #7EB8F7; display: block; margin-bottom: 5px; }
+.field-group input, .field-group select, .field-group textarea {
+    width: 100%; background: #0D1F35; color: #fff; border: 1px solid #1A3A5C;
+    border-radius: 8px; padding: 12px; font-size: 14px; outline: none;
+    transition: border-color 0.2s;
+}
+.field-group input:focus, .field-group select:focus, .field-group textarea:focus { border-color: #0A66C2; }
+.field-group select option { background: #0D1F35; }
+
+/* Color grid */
+.color-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px; }
+.color-opt { border: 2px solid transparent; border-radius: 8px; padding: 8px 4px; cursor: pointer; text-align: center; font-size: 10px; font-weight: 700; transition: all 0.2s; }
+.color-opt.selected { border-color: #fff; box-shadow: 0 0 0 2px #0A66C2; }
+
+/* Generate button */
+.btn-generate { width: 100%; background: linear-gradient(135deg, #0A66C2, #1D9E75); color: #fff; border: none; padding: 18px; border-radius: 12px; font-size: 17px; font-weight: 800; cursor: pointer; margin-top: 10px; letter-spacing: 0.5px; box-shadow: 0 8px 24px rgba(10,102,194,0.4); transition: all 0.3s; }
+.btn-generate:active { transform: scale(0.98); }
+.btn-generate:disabled { background: #333; box-shadow: none; cursor: not-allowed; }
+
+/* Status */
+.status { display: none; background: #0D1F35; border-radius: 12px; padding: 20px; margin-top: 16px; text-align: center; }
+.status.show { display: block; }
+.spinner { width: 40px; height: 40px; border: 3px solid #1A3A5C; border-top-color: #0A66C2; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.status-text { font-size: 14px; color: #7EB8F7; }
+
+/* Log */
+.log { background: #050D1A; border-radius: 8px; padding: 12px; margin-top: 12px; max-height: 150px; overflow-y: auto; }
+.log-line { font-size: 11px; font-family: monospace; padding: 2px 0; }
+.log-info { color: #7EB8F7; }
+.log-ok { color: #6ddf6d; }
+.log-err { color: #ff6b6b; }
+
+/* Result */
+.result { display: none; background: #0D1F35; border-radius: 12px; padding: 20px; margin-top: 16px; }
+.result.show { display: block; }
+.result h3 { color: #1D9E75; font-size: 16px; margin-bottom: 14px; }
+.page-card { background: #1A2A3A; border-radius: 10px; padding: 14px; margin-bottom: 10px; border-left: 3px solid #0A66C2; }
+.page-card strong { display: block; font-size: 14px; margin-bottom: 4px; }
+.page-card small { color: #7EB8F7; font-size: 11px; display: block; margin-bottom: 10px; }
+.page-btns { display: flex; gap: 8px; }
+.btn-sm { flex: 1; padding: 10px; border-radius: 8px; font-size: 12px; font-weight: 700; text-align: center; text-decoration: none; border: none; cursor: pointer; display: block; }
+.btn-edit { background: #0A66C2; color: #fff; }
+.btn-view { background: #1D9E75; color: #fff; }
+.btn-share { background: #25D366; color: #fff; margin-top: 8px; width: 100%; padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; }
+
+/* Settings link */
+.settings-note { text-align: center; font-size: 11px; color: #555; margin-top: 20px; padding-bottom: 30px; }
+.settings-note a { color: #7EB8F7; }
+
+/* API key form */
+.api-setup { background: #1A1A2E; border: 1px solid #C9A84C44; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+.api-setup h3 { font-size: 14px; color: #C9A84C; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🤖 AI Website <span>Generator</span></h1>
+    <p>By Rishabh Sharma • WordPress Developer</p>
+</div>
+
+<div class="form-wrap">
+
+    <!-- API Key Setup -->
+    <div class="api-setup" id="api-setup">
+        <h3>⚙️ Setup (one time only)</h3>
+        <div class="field-group">
+            <label>Groq API Key</label>
+            <input type="password" id="api-key" placeholder="gsk_...">
+        </div>
+        <div class="field-group">
+            <label>Unsplash Access Key (optional)</label>
+            <input type="password" id="uns-key" placeholder="For real images">
+        </div>
+        <button class="btn-parse" onclick="saveKeys()">💾 Save Keys</button>
+    </div>
+
+    <!-- Quick Paste -->
+    <div class="quick-paste">
+        <label>⚡ Google se copy karo — yahan paste karo</label>
+        <textarea id="quick-paste" placeholder="Example:
+Business: Smile Dental Clinic
+Location: Connaught Place, Delhi
+Phone: +91 98765 43210
+Services: Braces, Implants, Whitening
+Extra: 15 years experience"></textarea>
+        <button class="btn-parse" onclick="autofill()">✨ Auto Fill Fields</button>
+    </div>
+
+    <div class="divider">— ya manually bharo —</div>
+
+    <!-- Industry -->
+    <div class="field-group">
+        <label>Industry</label>
+        <select id="bt">
+            <option value="">-- Select Industry --</option>
+            <option value="dental clinic">🦷 Dental Clinic</option>
+            <option value="medical spa and aesthetic clinic">💆 Medical Spa</option>
+            <option value="wellness and health center">🌿 Wellness Center</option>
+            <option value="luxury real estate agency">🏠 Real Estate</option>
+            <option value="restaurant and cafe">🍽️ Restaurant</option>
+            <option value="law firm">⚖️ Law Firm</option>
+            <option value="gym and fitness center">💪 Gym / Fitness</option>
+            <option value="education and coaching institute">📚 Education</option>
+            <option value="ecommerce store">🛒 E-Commerce</option>
+            <option value="interior design studio">🛋️ Interior Design</option>
+            <option value="photography studio">📸 Photography</option>
+            <option value="travel agency">✈️ Travel Agency</option>
+            <option value="hospital or clinic">🏥 Hospital</option>
+            <option value="CA and accounting firm">📊 CA Firm</option>
+            <option value="news and entertainment magazine">📰 News & Magazine</option>
+            <option value="fashion boutique">👗 Fashion</option>
+            <option value="digital marketing agency">💻 Digital Marketing</option>
+            <option value="hotel and resort">🏨 Hotel / Resort</option>
+            <option value="salon and beauty parlour">💇 Salon & Beauty</option>
+            <option value="construction and architecture firm">🏗️ Construction</option>
+        </select>
+    </div>
+
+    <div class="field-group">
+        <label>Business Name</label>
+        <input type="text" id="bn" placeholder="e.g. Smile Care Dental">
+    </div>
+    <div class="field-group">
+        <label>Location</label>
+        <input type="text" id="loc" placeholder="e.g. New Delhi, India">
+    </div>
+    <div class="field-group">
+        <label>Key Services</label>
+        <input type="text" id="svc" placeholder="e.g. Braces, Implants, Whitening">
+    </div>
+    <div class="field-group">
+        <label>WhatsApp Number</label>
+        <input type="text" id="wa" placeholder="+91 98765 43210">
+    </div>
+    <div class="field-group">
+        <label>Extra Info</label>
+        <textarea id="ext" rows="2" placeholder="15 years experience, free consultation..."></textarea>
+    </div>
+
+    <!-- Color Theme -->
+    <div class="field-group">
+        <label>Color Theme</label>
+        <div class="color-grid" id="color-grid">
+            <div class="color-opt selected" data-v="blue_white" style="background:linear-gradient(135deg,#0A66C2,#1A3A5C);color:#fff" onclick="selColor(this)">Blue Pro</div>
+            <div class="color-opt" data-v="dark_gold" style="background:linear-gradient(135deg,#C9A84C,#1A1A1A);color:#fff" onclick="selColor(this)">Dark Gold</div>
+            <div class="color-opt" data-v="green_white" style="background:linear-gradient(135deg,#1D9E75,#0F6E56);color:#fff" onclick="selColor(this)">Green</div>
+            <div class="color-opt" data-v="purple_white" style="background:linear-gradient(135deg,#6C3FC5,#4A1E8C);color:#fff" onclick="selColor(this)">Purple</div>
+            <div class="color-opt" data-v="red_white" style="background:linear-gradient(135deg,#E53935,#B71C1C);color:#fff" onclick="selColor(this)">Red Bold</div>
+            <div class="color-opt" data-v="teal_white" style="background:linear-gradient(135deg,#00897B,#00695C);color:#fff" onclick="selColor(this)">Teal</div>
+            <div class="color-opt" data-v="orange_dark" style="background:linear-gradient(135deg,#FF6F00,#E65100);color:#fff" onclick="selColor(this)">Orange</div>
+            <div class="color-opt" data-v="rose_gold" style="background:linear-gradient(135deg,#C2185B,#880E4F);color:#fff" onclick="selColor(this)">Rose Gold</div>
+        </div>
+        <input type="hidden" id="ct" value="blue_white">
+    </div>
+
+    <button class="btn-generate" id="gen-btn" onclick="generate()">🧠 Generate Website Now</button>
+
+    <!-- Status -->
+    <div class="status" id="status">
+        <div class="spinner"></div>
+        <div class="status-text" id="stxt">AI designing your website...</div>
+        <div class="log" id="log"></div>
+    </div>
+
+    <!-- Result -->
+    <div class="result" id="result"></div>
+
+    <div class="settings-note">
+        Made by <a href="https://linkedin.com/in/rishab-sharma-dev" target="_blank">Rishabh Sharma</a> •
+        WordPress Developer • New Delhi
+    </div>
+</div>
+
+<script>
+// ── Keys management ────────────────────────────────────────────────────────
+function saveKeys() {
+    var ak = document.getElementById('api-key').value.trim();
+    var uk = document.getElementById('uns-key').value.trim();
+    if(!ak) { alert('Groq API key daalo!'); return; }
+    localStorage.setItem('eab_groq_key', ak);
+    if(uk) localStorage.setItem('eab_uns_key', uk);
+    document.getElementById('api-setup').style.display = 'none';
+    alert('✅ Keys saved! Ab generate kar sakte ho.');
+}
+
+window.addEventListener('load', function() {
+    var ak = localStorage.getItem('eab_groq_key');
+    if(ak) {
+        document.getElementById('api-setup').style.display = 'none';
+        document.getElementById('api-key').value = ak;
+    }
+    var uk = localStorage.getItem('eab_uns_key');
+    if(uk) document.getElementById('uns-key').value = uk;
+});
+
+// ── Color select ───────────────────────────────────────────────────────────
+function selColor(el) {
+    document.querySelectorAll('.color-opt').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('ct').value = el.dataset.v;
+}
+
+// ── Auto fill ──────────────────────────────────────────────────────────────
+function autofill() {
+    var raw = document.getElementById('quick-paste').value.trim();
+    if(!raw) { alert('Pehle paste karo!'); return; }
+    function ex(keys, t) {
+        for(var k of keys) { var m = t.match(new RegExp(k+'[:\\-]?\\s*(.+)','im')); if(m) return m[1].trim(); }
+        return '';
+    }
+    var bn  = ex(['Business','Name','Clinic','Restaurant','Hotel','Shop'], raw);
+    var loc = ex(['Location','Address','City','Area','Place'], raw);
+    var ph  = ex(['Phone','Mobile','WhatsApp','Contact','Number'], raw);
+    var svc = ex(['Services','Service','Products','Offers','Speciality'], raw);
+    var ext = ex(['About','Extra','Info','Experience','Note'], raw);
+    var low = raw.toLowerCase();
+    var btMap = {'dental':'dental clinic','salon':'salon and beauty parlour','restaurant':'restaurant and cafe','hotel':'hotel and resort','gym':'gym and fitness center','clinic':'hospital or clinic','real estate':'luxury real estate agency','interior':'interior design studio','coaching':'education and coaching institute','spa':'medical spa and aesthetic clinic','law':'law firm','construction':'construction and architecture firm','travel':'travel agency','fashion':'fashion boutique','digital marketing':'digital marketing agency','ecommerce':'ecommerce store','photography':'photography studio','ca ':'CA and accounting firm'};
+    var btSel = document.getElementById('bt');
+    for(var k in btMap) { if(low.includes(k)) { for(var o of btSel.options) { if(o.value===btMap[k]){btSel.value=btMap[k];break;} } break; } }
+    if(bn)  document.getElementById('bn').value  = bn;
+    if(loc) document.getElementById('loc').value = loc;
+    if(ph)  document.getElementById('wa').value  = ph;
+    if(svc) document.getElementById('svc').value = svc;
+    if(ext) document.getElementById('ext').value = ext;
+    var btn = document.querySelector('.btn-parse');
+    btn.textContent = '✅ Done! Review and Generate!';
+    btn.style.background = '#1D9E75';
+    btn.style.color = '#fff';
+}
+
+// ── Color themes ───────────────────────────────────────────────────────────
+var themes = {
+    blue_white:   {p:'#0A66C2',s:'#1A3A5C',a:'#FF6B35',bg:'#0A1628',sbg:'#F0F6FF',td:'#1A1A2E',tm:'#666'},
+    dark_gold:    {p:'#C9A84C',s:'#1A1A1A',a:'#E8C97A',bg:'#0D0D0D',sbg:'#F5F0E8',td:'#1A1A1A',tm:'#888'},
+    green_white:  {p:'#1D9E75',s:'#0F6E56',a:'#4CAF50',bg:'#0B3D2E',sbg:'#F0FBF6',td:'#1A2E25',tm:'#555'},
+    purple_white: {p:'#6C3FC5',s:'#4A1E8C',a:'#9B59B6',bg:'#1A0A2E',sbg:'#F5F0FF',td:'#1A0A2E',tm:'#666'},
+    red_white:    {p:'#E53935',s:'#B71C1C',a:'#FF6B6B',bg:'#1A0505',sbg:'#FFF5F5',td:'#1A0505',tm:'#666'},
+    teal_white:   {p:'#00897B',s:'#00695C',a:'#26C6DA',bg:'#003D36',sbg:'#E0F7FA',td:'#003D36',tm:'#555'},
+    orange_dark:  {p:'#FF6F00',s:'#E65100',a:'#FFD600',bg:'#1A0A00',sbg:'#FFF8F0',td:'#1A0A00',tm:'#666'},
+    rose_gold:    {p:'#C2185B',s:'#880E4F',a:'#FFA000',bg:'#1A0010',sbg:'#FCE4EC',td:'#1A0010',tm:'#666'},
+};
+
+// ── Industry blueprints (simplified for web app) ───────────────────────────
+var blueprints = {
+    'dental clinic':               {hero:'hero_medical',  secs:['stats_bar','treatment_showcase','doctor_profile','before_after','appointment_cta','testimonials_cards','faq_accordion','cta_banner']},
+    'medical spa':                 {hero:'hero_elegant',  secs:['stats_bar','service_showcase','before_after','treatment_showcase','why_us_dark','testimonials_cards','pricing_cards','appointment_cta']},
+    'wellness':                    {hero:'hero_minimal',  secs:['stats_bar','services_grid','about_split','process_steps','team_grid','testimonials_cards','pricing_cards','cta_banner']},
+    'real estate':                 {hero:'hero_property', secs:['stats_bar','property_listings','about_split','process_steps','team_grid','testimonials_cards','awards_logos','contact_split']},
+    'restaurant':                  {hero:'hero_cinematic',secs:['stats_bar','menu_section','masonry_showcase','about_split','why_us_dark','testimonials_cards','cta_banner']},
+    'law firm':                    {hero:'hero_dark_pro', secs:['stats_bar','services_list','about_split','team_grid','why_us_dark','awards_logos','testimonials_cards','faq_accordion','cta_banner']},
+    'gym':                         {hero:'hero_energy',   secs:['stats_bar','class_schedule','pricing_cards','about_split','team_grid','testimonials_cards','cta_banner']},
+    'education':                   {hero:'hero_split',    secs:['stats_bar','services_grid','about_split','team_grid','pricing_cards','testimonials_cards','faq_accordion','cta_banner']},
+    'ecommerce':                   {hero:'hero_ecommerce',secs:['category_strip','deals_section','product_showcase','brands_strip','why_us_dark','testimonials_cards','cta_banner']},
+    'interior design':             {hero:'hero_portfolio',secs:['stats_bar','masonry_showcase','project_showcase','about_split','team_grid','testimonials_cards','cta_banner']},
+    'photography':                 {hero:'hero_portfolio',secs:['masonry_showcase','services_list','about_split','pricing_cards','testimonials_cards','cta_banner']},
+    'travel':                      {hero:'hero_travel',   secs:['stats_bar','tour_packages','category_strip','about_split','masonry_showcase','testimonials_cards','cta_banner']},
+    'hospital':                    {hero:'hero_medical',  secs:['stats_bar','services_grid','doctor_profile','appointment_cta','treatment_showcase','testimonials_cards','faq_accordion','cta_banner']},
+    'CA and accounting':           {hero:'hero_dark_pro', secs:['stats_bar','services_list','about_split','team_grid','why_us_dark','awards_logos','testimonials_cards','cta_banner']},
+    'news':                        {hero:'hero_magazine', secs:['news_magazine','category_strip','blog_grid','about_split','cta_banner']},
+    'fashion':                     {hero:'hero_elegant',  secs:['category_strip','product_showcase','masonry_showcase','about_split','brands_strip','testimonials_cards','cta_banner']},
+    'digital marketing':           {hero:'hero_tech',     secs:['brands_strip','services_grid','about_split','process_steps','why_us_dark','pricing_cards','testimonials_cards','cta_banner']},
+    'hotel':                       {hero:'hero_luxury_slider',secs:['room_showcase','stats_bar','masonry_showcase','about_split','why_us_dark','awards_logos','contact_split']},
+    'salon':                       {hero:'hero_beauty',   secs:['stats_bar','service_showcase','before_after','team_grid','pricing_cards','testimonials_cards','appointment_cta']},
+    'construction':                {hero:'hero_bold_dark',secs:['stats_bar','project_showcase','masonry_showcase','about_split','why_us_dark','awards_logos','testimonials_cards','cta_banner']},
+};
+
+function getBlueprintSecs(bt) {
+    for(var k in blueprints) { if(bt.toLowerCase().includes(k)) return blueprints[k].secs; }
+    return ['stats_bar','services_grid','about_split','process_steps','why_us_dark','testimonials_cards','cta_banner'];
+}
+
+function getHero(bt) {
+    for(var k in blueprints) { if(bt.toLowerCase().includes(k)) return blueprints[k].hero; }
+    return 'hero_fullscreen';
+}
+
+// ── Unsplash image fetch ───────────────────────────────────────────────────
+async function fetchImg(q, key) {
+    if(!key) return '';
+    try {
+        var r = await fetch('https://api.unsplash.com/photos/random?query='+encodeURIComponent(q)+'&orientation=landscape&client_id='+key);
+        var d = await r.json();
+        return d.urls?.regular || '';
+    } catch(e) { return ''; }
+}
+
+// ── Log helper ─────────────────────────────────────────────────────────────
+function log(msg, t) {
+    var el = document.getElementById('log');
+    el.innerHTML += '<div class="log-line log-'+(t||'info')+'">▸ '+msg+'</div>';
+    el.scrollTop = el.scrollHeight;
+}
+
+// ── Color helpers ──────────────────────────────────────────────────────────
+function bg(type, c, img) {
+    var styles = {
+        white:            'background:#FFFFFF',
+        light:            'background:'+c.sbg,
+        primary_gradient: 'background:linear-gradient(135deg,'+c.p+','+c.s+')',
+        dark_gradient:    'background:linear-gradient(135deg,'+c.s+','+c.bg+')',
+        img_overlay:      img ? 'background:url('+img+') center/cover no-repeat;position:relative' : 'background:linear-gradient(135deg,'+c.p+','+c.s+')',
+    };
+    return styles[type] || 'background:#fff';
+}
+
+function badge(txt, color) { return '<span style="background:'+color+'22;color:'+color+';font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:5px 14px;border-radius:20px;display:inline-block;margin-bottom:12px;">'+txt+'</span>'; }
+function btn(txt, url, color) { return '<a href="'+(url||'#')+'" style="display:inline-block;padding:13px 30px;border-radius:50px;font-size:14px;font-weight:800;text-decoration:none;background:'+color+';color:#fff;transition:all 0.3s;margin:4px;">'+txt+'</a>'; }
+function btnOutline(txt, url) { return '<a href="'+(url||'#')+'" style="display:inline-block;padding:13px 30px;border-radius:50px;font-size:14px;font-weight:800;text-decoration:none;background:transparent;border:2px solid rgba(255,255,255,0.6);color:#fff;margin:4px;">'+txt+'</a>'; }
+
+// ── Section renderers ──────────────────────────────────────────────────────
+function renderSection(sec, c, imgs, bn, wa) {
+    var t = sec.type; var i0 = imgs[sec.bg_img_index||0]||''; var img = i0;
+    var waLink = wa ? 'https://wa.me/'+wa.replace(/[^0-9]/g,'') : '#contact';
+
+    switch(t) {
+        case 'hero_medical': return renderHeroMedical(sec,c,img,wa);
+        case 'hero_property': return renderHeroProperty(sec,c,img);
+        case 'hero_cinematic': return renderHeroCinematic(sec,c,img);
+        case 'hero_energy': return renderHeroEnergy(sec,c,img);
+        case 'hero_portfolio': return renderHeroPortfolio(sec,c,img);
+        case 'hero_travel': return renderHeroTravel(sec,c,img);
+        case 'hero_luxury_slider': return renderHeroLuxury(sec,c,img);
+        case 'hero_dark_pro': return renderHeroDarkPro(sec,c,img);
+        case 'hero_ecommerce': return renderHeroEcommerce(sec,c,img);
+        case 'hero_beauty': return renderHeroBeauty(sec,c,img);
+        case 'hero_magazine': return renderHeroMagazine(sec,c,img);
+        case 'hero_tech': return renderHeroTech(sec,c);
+        case 'hero_bold_dark': return renderHeroBold(sec,c,img);
+        case 'hero_elegant': return renderHeroElegant(sec,c,img);
+        case 'hero_split': return renderHeroSplit(sec,c,img);
+        case 'hero_fullscreen': return renderHeroFull(sec,c,img);
+        case 'hero_minimal': return renderHeroMinimal(sec,c,img);
+        case 'stats_bar': return renderStats(sec,c);
+        case 'services_grid': return renderServicesGrid(sec,c);
+        case 'services_list': return renderServicesList(sec,c);
+        case 'about_split': return renderAbout(sec,c,img);
+        case 'process_steps': return renderProcess(sec,c);
+        case 'why_us_dark': return renderWhyUs(sec,c);
+        case 'testimonials_cards': return renderTestimonials(sec,c);
+        case 'team_grid': return renderTeam(sec,c);
+        case 'faq_accordion': return renderFaq(sec,c);
+        case 'cta_banner': return renderCta(sec,c,img,wa);
+        case 'appointment_cta': return renderAppointment(sec,c,wa);
+        case 'before_after': return renderBeforeAfter(sec,c);
+        case 'pricing_cards': return renderPricing(sec,c);
+        case 'awards_logos': return renderAwards(sec,c);
+        case 'treatment_showcase': return renderTreatment(sec,c);
+        case 'service_showcase': return renderServiceShowcase(sec,c);
+        case 'product_showcase': return renderProducts(sec,c);
+        case 'category_strip': return renderCategories(sec,c);
+        case 'deals_section': return renderDeals(sec,c);
+        case 'brands_strip': return renderBrands(sec,c);
+        case 'doctor_profile': return renderDoctor(sec,c,img);
+        case 'masonry_showcase': return renderMasonry(sec,c,imgs);
+        case 'menu_section': return renderMenu(sec,c);
+        case 'class_schedule': return renderSchedule(sec,c);
+        case 'property_listings': return renderProperties(sec,c,imgs);
+        case 'tour_packages': return renderTours(sec,c,imgs);
+        case 'room_showcase': return renderRooms(sec,c,imgs);
+        case 'blog_grid': return renderBlog(sec,c);
+        case 'news_magazine': return renderNews(sec,c);
+        case 'contact_split': return renderContact(sec,c,wa);
+        case 'portfolio_grid': return renderPortfolio(sec,c,imgs);
+        case 'project_showcase': return renderProjects(sec,c,imgs);
+        default: return renderGeneric(sec,c);
+    }
+}
+
+// ── Hero renderers ─────────────────────────────────────────────────────────
+function heroWrap(bg_css, content, min_h) {
+    return '<section style="'+bg_css+';min-height:'+(min_h||'520px')+';display:flex;align-items:center;overflow:hidden;">'+content+'</section>';
+}
+function renderHeroMedical(s,c,img,wa) {
+    var waLink = wa ? 'https://wa.me/'+wa.replace(/[^0-9]/g,'') : '#contact';
+    var left = '<div style="flex:1;padding:60px 44px;"><div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);padding:7px 16px;border-radius:30px;margin-bottom:20px;"><span style="width:8px;height:8px;background:#4CAF50;border-radius:50%;display:inline-block;"></span><span style="font-size:11px;color:#fff;font-weight:600;letter-spacing:1px;">'+(s.trust_badge||'Certified & Trusted')+'</span></div><h1 style="font-size:clamp(28px,5vw,52px);font-weight:900;color:#fff;line-height:1.1;margin:0 0 16px;">'+(s.heading||'')+'</h1><p style="font-size:16px;color:rgba(255,255,255,0.85);line-height:1.75;margin:0 0 28px;">'+(s.subheading||'')+'</p><div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px;">'+btn(s.cta1_text||'Book Now',waLink,c.p)+btnOutline(s.cta2_text||'Services',s.cta2_url||'#services')+'</div>'+(s.phone?'<div style="font-size:20px;color:#fff;font-weight:800;">📞 '+s.phone+'</div>':'')+'</div>';
+    var right = img ? '<div style="flex:0 0 45%;background:url('+img+') center/cover no-repeat;min-height:520px;"></div>' : '';
+    var bg = 'background:'+c.bg;
+    return heroWrap(bg, '<div style="display:flex;width:100%;flex-wrap:wrap;">'+left+right+'</div>', '520px');
+}
+function renderHeroProperty(s,c,img) {
+    var ov = img ? 'background:url('+img+') center/cover no-repeat' : 'background:linear-gradient(135deg,'+c.bg+','+c.s+')';
+    var stats = (s.stats||[{num:'500+',label:'Properties'},{num:'15+',label:'Years'},{num:'RERA',label:'Certified'}]);
+    var statsHtml = stats.map(st=>'<div style="background:rgba(255,255,255,0.12);backdrop-filter:blur(10px);border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,0.2);text-align:center;"><div style="font-size:26px;font-weight:900;color:#fff;">'+st.num+'</div><div style="font-size:10px;color:rgba(255,255,255,0.75);text-transform:uppercase;letter-spacing:1px;">'+st.label+'</div></div>').join('');
+    var h='<div style="text-align:center;padding:100px 40px 60px;position:relative;z-index:1;width:100%;"><h1 style="font-size:clamp(30px,5vw,56px);font-weight:900;color:#fff;margin:0 0 16px;text-shadow:0 3px 20px rgba(0,0,0,0.4);">'+(s.heading||'')+'</h1><p style="font-size:18px;color:rgba(255,255,255,0.88);margin:0 0 32px;max-width:580px;margin-left:auto;margin-right:auto;">'+(s.subheading||'')+'</p><div style="display:flex;gap:12px;justify-content:center;margin-bottom:44px;">'+btn(s.cta1_text||'View Properties',s.cta1_url||'#',c.p)+btnOutline(s.cta2_text||'Free Site Visit',s.cta2_url||'#')+'</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:14px;max-width:600px;margin:0 auto;">'+statsHtml+'</div></div>';
+    return heroWrap(ov+';position:relative', '<div style="position:absolute;inset:0;background:rgba(0,0,0,0.55);"></div>'+h, '560px');
+}
+function renderHeroCinematic(s,c,img) {
+    var ov = img?'background:url('+img+') center/cover no-repeat':'background:#0A0500';
+    var h='<div style="text-align:center;padding:110px 40px;position:relative;z-index:1;width:100%;"><div style="color:'+c.a+';font-size:12px;font-weight:700;letter-spacing:4px;text-transform:uppercase;margin-bottom:18px;">✦ '+(s.trust_badge||'Fine Dining Experience')+' ✦</div><h1 style="font-size:clamp(32px,6vw,64px);font-weight:900;color:#fff;line-height:1;margin:0 0 8px;">'+(s.heading||'')+'</h1><div style="width:50px;height:3px;background:'+c.p+';margin:14px auto;"></div><p style="font-size:17px;color:rgba(255,255,255,0.78);margin:0 0 34px;max-width:500px;margin-left:auto;margin-right:auto;">'+(s.subheading||'')+'</p><div style="display:flex;gap:16px;justify-content:center;">'+btn(s.cta1_text||'Reserve Table',s.cta1_url||'#',c.p)+'<a href="'+(s.cta2_url||'#')+'" style="color:#fff;font-size:14px;font-weight:600;text-decoration:none;border-bottom:2px solid '+c.a+';padding-bottom:2px;align-self:center;">'+(s.cta2_text||'View Menu')+' →</a></div></div>';
+    return heroWrap(ov+';position:relative','<div style="position:absolute;inset:0;background:rgba(0,0,0,0.72);"></div>'+h,'520px');
+}
+function renderHeroEnergy(s,c,img) {
+    var ov = img?'background:url('+img+') center/cover no-repeat':'background:#050505';
+    var stats=(s.stats||[{num:'2000+',label:'Members'},{num:'24/7',label:'Open'},{num:'98%',label:'Results'}]);
+    var statsHtml=stats.map(st=>'<div><div style="font-size:30px;font-weight:900;color:'+c.p+';">'+st.num+'</div><div style="font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px;">'+st.label+'</div></div>').join('');
+    var h='<div style="padding:90px 50px;position:relative;z-index:1;max-width:750px;"><div style="display:inline-block;background:'+c.p+';color:#fff;font-size:10px;font-weight:800;padding:5px 16px;border-radius:4px;letter-spacing:2px;text-transform:uppercase;margin-bottom:20px;">'+(s.trust_badge||'Transform Your Body')+'</div><h1 style="font-size:clamp(36px,6vw,70px);font-weight:900;color:#fff;line-height:0.95;margin:0 0 18px;letter-spacing:-2px;text-transform:uppercase;">'+(s.heading||'')+'</h1><p style="font-size:17px;color:rgba(255,255,255,0.72);margin:0 0 30px;">'+(s.subheading||'')+'</p><div style="display:flex;gap:12px;margin-bottom:36px;">'+btn(s.cta1_text||'Join Now',s.cta1_url||'#',c.p)+btn(s.cta2_text||'Free Trial',s.cta2_url||'#','rgba(255,255,255,0.1)')+'</div><div style="display:flex;gap:28px;padding-top:24px;border-top:1px solid rgba(255,255,255,0.12);">'+statsHtml+'</div></div>';
+    return heroWrap(ov+';position:relative','<div style="position:absolute;inset:0;background:rgba(0,0,0,0.75);"></div>'+h,'540px');
+}
+function renderHeroPortfolio(s,c,img) {
+    var left='<div style="flex:1;padding:80px 40px;background:'+c.td+';"><div style="width:44px;height:3px;background:'+c.p+';margin-bottom:20px;"></div><h1 style="font-size:clamp(28px,4vw,50px);font-weight:900;color:#fff;line-height:1.1;margin:0 0 16px;">'+(s.heading||'')+'</h1><p style="font-size:16px;color:rgba(255,255,255,0.72);margin:0 0 28px;">'+(s.subheading||'')+'</p><div style="display:flex;gap:12px;flex-wrap:wrap;">'+btn(s.cta1_text||'View Portfolio',s.cta1_url||'#',c.p)+btnOutline(s.cta2_text||'Get Quote',s.cta2_url||'#')+'</div></div>';
+    var right=img?'<div style="flex:0 0 45%;background:url('+img+') center/cover no-repeat;min-height:500px;"></div>':'';
+    return heroWrap('background:'+c.td,'<div style="display:flex;width:100%;flex-wrap:wrap;">'+left+right+'</div>','500px');
+}
+function renderHeroTravel(s,c,img) {
+    var ov=img?'background:url('+img+') center/cover no-repeat':'background:linear-gradient(135deg,'+c.bg+','+c.s+')';
+    var h='<div style="text-align:center;padding:110px 40px;position:relative;z-index:1;width:100%;"><div style="display:inline-block;background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);color:#fff;font-size:12px;font-weight:700;padding:9px 22px;border-radius:30px;margin-bottom:20px;border:1px solid rgba(255,255,255,0.25);">✈️ '+(s.trust_badge||'Trusted Travel Partner')+'</div><h1 style="font-size:clamp(30px,5vw,58px);font-weight:900;color:#fff;margin:0 0 16px;text-shadow:0 4px 20px rgba(0,0,0,0.4);">'+(s.heading||'')+'</h1><p style="font-size:18px;color:rgba(255,255,255,0.88);margin:0 0 34px;max-width:580px;margin-left:auto;margin-right:auto;">'+(s.subheading||'')+'</p><div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">'+btn(s.cta1_text||'Explore Packages',s.cta1_url||'#',c.p)+btnOutline(s.cta2_text||'Plan My Trip',s.cta2_url||'#')+'</div></div>';
+    return heroWrap(ov+';position:relative','<div style="position:absolute;inset:0;background:rgba(0,0,0,0.5);"></div>'+h,'520px');
+}
+function renderHeroLuxury(s,c,img) {
+    var ov=img?'background:url('+img+') center/cover no-repeat':'background:'+c.bg;
+    var h='<div style="text-align:center;padding:130px 40px;position:relative;z-index:1;width:100%;"><div style="color:'+c.a+';font-size:12px;font-weight:700;letter-spacing:4px;text-transform:uppercase;margin-bottom:18px;">— '+(s.trust_badge||'5 Star Luxury Experience')+' —</div><h1 style="font-size:clamp(28px,5vw,60px);font-weight:200;color:#fff;line-height:1.1;margin:0 0 8px;letter-spacing:2px;font-style:italic;">'+(s.heading||'')+'</h1><div style="width:70px;height:1px;background:'+c.a+';margin:18px auto;"></div><p style="font-size:17px;color:rgba(255,255,255,0.85);margin:0 0 36px;max-width:500px;margin-left:auto;margin-right:auto;font-weight:300;">'+(s.subheading||'')+'</p><div style="display:flex;gap:14px;justify-content:center;"><a href="'+(s.cta1_url||'#')+'" style="background:'+c.a+';color:'+c.td+';padding:14px 40px;border-radius:2px;font-size:12px;font-weight:700;text-decoration:none;letter-spacing:2px;text-transform:uppercase;">'+(s.cta1_text||'Book Now')+'</a><a href="'+(s.cta2_url||'#')+'" style="background:transparent;color:#fff;padding:14px 40px;border-radius:2px;font-size:12px;font-weight:700;text-decoration:none;border:1px solid rgba(255,255,255,0.5);letter-spacing:2px;text-transform:uppercase;">'+(s.cta2_text||'View Rooms')+'</a></div></div>';
+    return heroWrap(ov+';position:relative','<div style="position:absolute;inset:0;background:rgba(0,0,0,0.45);"></div>'+h,'560px');
+}
+function renderHeroDarkPro(s,c,img) {
+    var ov=img?'background:url('+img+') center/cover no-repeat':'background:#0A0A0A';
+    var h='<div style="padding:110px 70px;position:relative;z-index:1;max-width:800px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:26px;"><div style="width:36px;height:2px;background:'+c.p+';"></div><span style="font-size:11px;color:'+c.p+';font-weight:700;letter-spacing:3px;text-transform:uppercase;">'+(s.trust_badge||'Excellence in Law')+'</span></div><h1 style="font-size:clamp(30px,5vw,58px);font-weight:900;color:#fff;line-height:1.05;margin:0 0 18px;">'+(s.heading||'')+'</h1><p style="font-size:17px;color:rgba(255,255,255,0.68);margin:0 0 32px;max-width:520px;">'+(s.subheading||'')+'</p><div style="display:flex;gap:12px;">'+btn(s.cta1_text||'Free Consultation',s.cta1_url||'#',c.p)+'<a href="'+(s.cta2_url||'#')+'" style="color:rgba(255,255,255,0.7);font-size:13px;font-weight:600;text-decoration:none;align-self:center;border-bottom:1px solid rgba(255,255,255,0.3);padding-bottom:2px;">'+(s.cta2_text||'Practice Areas')+' →</a></div></div>';
+    return heroWrap(ov+';position:relative','<div style="position:absolute;inset:0;background:rgba(0,0,0,0.8);"></div>'+h,'520px');
+}
+function renderHeroEcommerce(s,c,img) {
+    var ov=img?'background:url('+img+') center/cover no-repeat':'background:linear-gradient(135deg,'+c.p+','+c.s+')';
+    var h='<div style="text-align:center;padding:90px 40px;position:relative;z-index:1;width:100%;"><div style="display:inline-block;background:#FF3B30;color:#fff;font-size:12px;font-weight:800;padding:7px 20px;border-radius:30px;margin-bottom:18px;">🔥 '+(s.offer_text||'SALE — Up to 50% Off Today!')+'</div><h1 style="font-size:clamp(28px,5vw,52px);font-weight:900;color:#fff;margin:0 0 14px;">'+(s.heading||'')+'</h1><p style="font-size:18px;color:rgba(255,255,255,0.9);margin:0 0 32px;max-width:560px;margin-left:auto;margin-right:auto;">'+(s.subheading||'')+'</p><div style="display:flex;gap:12px;justify-content:center;margin-bottom:36px;">'+btn('🛒 '+(s.cta1_text||'Shop Now'),s.cta1_url||'#','#fff')+btnOutline(s.cta2_text||'View Deals',s.cta2_url||'#')+'</div><div style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;"><span style="color:rgba(255,255,255,0.9);font-size:12px;font-weight:600;">✅ Free Delivery ₹499+</span><span style="color:rgba(255,255,255,0.9);font-size:12px;font-weight:600;">🔄 30-Day Returns</span><span style="color:rgba(255,255,255,0.9);font-size:12px;font-weight:600;">💳 COD Available</span></div></div>';
+    return heroWrap(ov+';position:relative','<div style="position:absolute;inset:0;background:rgba(0,0,0,0.5);"></div>'+h,'500px');
+}
+function renderHeroBeauty(s,c,img) {
+    var left='<div style="flex:1;padding:80px 40px;background:#fff;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;"><div style="width:28px;height:1px;background:'+c.p+';"></div><span style="font-size:10px;color:'+c.p+';font-weight:700;letter-spacing:3px;text-transform:uppercase;">'+(s.trust_badge||'Premium Beauty Studio')+'</span></div><h1 style="font-size:clamp(26px,4vw,48px);font-weight:800;color:'+c.td+';line-height:1.1;margin:0 0 14px;">'+(s.heading||'')+'</h1><p style="font-size:15px;color:'+c.tm+';line-height:1.8;margin:0 0 28px;">'+(s.subheading||'')+'</p><div style="display:flex;gap:12px;flex-wrap:wrap;">'+btn(s.cta1_text||'Book Now',s.cta1_url||'#',c.p)+'<a href="'+(s.cta2_url||'#')+'" style="padding:13px 28px;border-radius:50px;font-size:14px;font-weight:800;text-decoration:none;background:transparent;color:'+c.p+';border:2px solid '+c.p+';">'+(s.cta2_text||'Services')+'</a></div></div>';
+    var right=img?'<div style="flex:0 0 45%;background:url('+img+') center/cover no-repeat;min-height:500px;"></div>':'<div style="flex:0 0 45%;background:linear-gradient(135deg,'+c.p+','+c.s+');min-height:500px;"></div>';
+    return heroWrap('background:#fff','<div style="display:flex;width:100%;flex-wrap:wrap;">'+left+right+'</div>','500px');
+}
+function renderHeroMagazine(s,c,img) {
+    var ov=img?'background:url('+img+') center/cover no-repeat':'background:#0A0A0A';
+    var h='<div style="padding:50px 50px 0;position:relative;z-index:1;width:100%;"><div style="display:flex;align-items:center;gap:12px;margin-bottom:70px;"><div style="font-size:20px;font-weight:900;color:#fff;letter-spacing:3px;text-transform:uppercase;">'+(s.heading||'')+'</div><div style="height:2px;flex:1;background:rgba(255,255,255,0.2);"></div><div style="font-size:11px;color:rgba(255,255,255,0.6);font-weight:600;letter-spacing:1px;">LIVE</div><div style="width:7px;height:7px;background:#E53935;border-radius:50%;"></div></div><h1 style="font-size:clamp(28px,5vw,64px);font-weight:900;color:#fff;line-height:0.95;margin:0 0 22px;letter-spacing:-2px;max-width:820px;">'+(s.subheading||'Breaking News Today')+'</h1><div style="display:flex;align-items:center;justify-content:space-between;padding:20px 0;border-top:1px solid rgba(255,255,255,0.15);flex-wrap:wrap;gap:12px;"><span style="background:'+c.p+';color:#fff;font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;text-transform:uppercase;">Breaking</span>'+btn(s.cta1_text||'Read More',s.cta1_url||'#','#fff')+'</div></div>';
+    return heroWrap(ov+';position:relative','<div style="position:absolute;inset:0;background:rgba(0,0,0,0.72);"></div>'+h,'520px');
+}
+function renderHeroTech(s,c) {
+    var feats=(s.features||['AI-Powered Strategy','Data-Driven Results','360° Growth','Guaranteed ROI']);
+    var h='<div style="text-align:center;padding:110px 40px;width:100%;"><div style="display:inline-flex;align-items:center;gap:8px;background:'+c.p+'22;border:1px solid '+c.p+'44;color:'+c.p+';font-size:11px;font-weight:700;padding:7px 18px;border-radius:30px;margin-bottom:22px;text-transform:uppercase;letter-spacing:1px;">'+(s.trust_badge||'Certified Google & Meta Partner')+'</div><h1 style="font-size:clamp(28px,5vw,56px);font-weight:900;color:#fff;margin:0 0 16px;">'+(s.heading||'')+'</h1><p style="font-size:18px;color:rgba(255,255,255,0.75);margin:0 0 32px;max-width:580px;margin-left:auto;margin-right:auto;">'+(s.subheading||'')+'</p><div style="display:flex;gap:12px;justify-content:center;margin-bottom:36px;">'+btn(s.cta1_text||'Get Free Audit',s.cta1_url||'#',c.p)+btnOutline(s.cta2_text||'View Case Studies',s.cta2_url||'#')+'</div><div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">'+feats.map(f=>'<div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:9px 18px;font-size:12px;color:rgba(255,255,255,0.85);font-weight:600;">✓ '+f+'</div>').join('')+'</div></div>';
+    return heroWrap('background:linear-gradient(135deg,'+c.bg+','+c.s+')',h,'520px');
+}
+function renderHeroBold(s,c,img) {
+    var ov=img?'background:url('+img+') center/cover no-repeat':'background:'+c.bg;
+    var stats=(s.stats||[{num:'300+',label:'Projects'},{num:'18+',label:'Years'},{num:'ISO',label:'Certified'}]);
+    var statsHtml=stats.map((st,i)=>'<div style="padding:18px 28px;'+(i>0?'border-left:1px solid rgba(255,255,255,0.15)':'')+'"><div style="font-size:32px;font-weight:900;color:'+c.p+';">'+st.num+'</div><div style="font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-top:4px;">'+st.label+'</div></div>').join('');
+    var h='<div style="padding:110px 55px 80px;position:relative;z-index:1;max-width:860px;"><h1 style="font-size:clamp(36px,6vw,70px);font-weight:900;color:#fff;line-height:0.95;margin:0 0 20px;letter-spacing:-2px;text-transform:uppercase;">'+(s.heading||'')+'</h1><p style="font-size:18px;color:rgba(255,255,255,0.75);margin:0 0 32px;max-width:540px;">'+(s.subheading||'')+'</p><div style="display:flex;gap:12px;margin-bottom:50px;">'+btn(s.cta1_text||'Get Quote',s.cta1_url||'#',c.p)+btn(s.cta2_text||'Our Projects',s.cta2_url||'#','rgba(255,255,255,0.1)')+'</div><div style="display:flex;gap:0;">'+statsHtml+'</div></div>';
+    return heroWrap(ov+';position:relative','<div style="position:absolute;inset:0;background:rgba(0,0,0,0.65);"></div>'+h,'540px');
+}
+function renderHeroElegant(s,c,img) {
+    var ov=img?'background:url('+img+') center/cover no-repeat':'background:linear-gradient(135deg,'+c.bg+','+c.s+')';
+    var h='<div style="text-align:center;padding:120px 40px;position:relative;z-index:1;width:100%;"><div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px;"><div style="width:36px;height:1px;background:rgba(255,255,255,0.5);"></div><span style="font-size:11px;color:rgba(255,255,255,0.85);font-weight:600;letter-spacing:3px;text-transform:uppercase;">'+(s.trust_badge||'Premium Experience')+'</span><div style="width:36px;height:1px;background:rgba(255,255,255,0.5);"></div></div><h1 style="font-size:clamp(28px,5vw,58px);font-weight:200;color:#fff;line-height:1.1;margin:0 0 16px;letter-spacing:3px;font-style:italic;">'+(s.heading||'')+'</h1><p style="font-size:17px;color:rgba(255,255,255,0.82);margin:0 0 34px;max-width:520px;margin-left:auto;margin-right:auto;font-weight:300;">'+(s.subheading||'')+'</p><div style="display:flex;gap:14px;justify-content:center;"><a href="'+(s.cta1_url||'#')+'" style="background:#fff;color:'+c.td+';padding:14px 38px;border-radius:2px;font-size:12px;font-weight:700;text-decoration:none;text-transform:uppercase;letter-spacing:2px;">'+(s.cta1_text||'Book Now')+'</a><a href="'+(s.cta2_url||'#')+'" style="background:transparent;color:#fff;padding:14px 38px;border-radius:2px;font-size:12px;font-weight:700;text-decoration:none;border:1px solid rgba(255,255,255,0.5);letter-spacing:2px;text-transform:uppercase;">'+(s.cta2_text||'Explore')+'</a></div></div>';
+    return heroWrap(ov+';position:relative','<div style="position:absolute;inset:0;background:rgba(0,0,0,0.48);"></div>'+h,'520px');
+}
+function renderHeroSplit(s,c,img) {
+    var left='<div style="flex:1;padding:80px 40px;background:#fff;"><div style="display:inline-block;background:'+c.p+'22;color:'+c.p+';font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:6px 16px;border-radius:20px;margin-bottom:18px;">'+(s.trust_badge||'Trusted Since 2010')+'</div><h1 style="font-size:clamp(26px,4vw,48px);font-weight:900;color:'+c.td+';line-height:1.1;margin:0 0 14px;">'+(s.heading||'')+'</h1><p style="font-size:15px;color:'+c.tm+';line-height:1.78;margin:0 0 28px;">'+(s.subheading||'')+'</p><div style="display:flex;gap:12px;flex-wrap:wrap;">'+btn(s.cta1_text||'Get Started',s.cta1_url||'#',c.p)+'<a href="'+(s.cta2_url||'#')+'" style="padding:13px 26px;border-radius:50px;font-size:14px;font-weight:800;text-decoration:none;background:transparent;color:'+c.p+';border:2px solid '+c.p+';">'+(s.cta2_text||'Learn More')+'</a></div></div>';
+    var right=img?'<div style="flex:0 0 45%;background:url('+img+') center/cover no-repeat;min-height:500px;"></div>':'<div style="flex:0 0 45%;background:linear-gradient(135deg,'+c.p+','+c.s+');min-height:500px;"></div>';
+    return heroWrap('background:#fff','<div style="display:flex;width:100%;flex-wrap:wrap;">'+left+right+'</div>','500px');
+}
+function renderHeroMinimal(s,c,img) {
+    var ov=img?'background:url('+img+') center/cover no-repeat':'background:linear-gradient(135deg,'+c.bg+','+c.s+')';
+    var h='<div style="text-align:center;padding:120px 40px;position:relative;z-index:1;width:100%;max-width:800px;margin:0 auto;"><h1 style="font-size:clamp(28px,5vw,54px);font-weight:900;color:#fff;margin:0 0 14px;">'+(s.heading||'')+'</h1><p style="font-size:18px;color:rgba(255,255,255,0.85);margin:0 0 32px;">'+(s.subheading||'')+'</p><div style="display:flex;gap:12px;justify-content:center;">'+btn(s.cta1_text||'Get Started',s.cta1_url||'#',c.p)+btnOutline(s.cta2_text||'Learn More',s.cta2_url||'#')+'</div></div>';
+    return heroWrap(ov+';position:relative','<div style="position:absolute;inset:0;background:rgba(0,0,0,0.55);"></div>'+h,'480px');
+}
+function renderHeroFull(s,c,img) {
+    var ov=img?'background:url('+img+') center/cover no-repeat':'background:linear-gradient(135deg,'+c.bg+','+c.s+')';
+    var h='<div style="text-align:center;padding:120px 40px;position:relative;z-index:1;width:100%;max-width:880px;margin:0 auto;">'+(s.trust_badge?'<div style="display:inline-block;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.3);color:#fff;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:7px 20px;border-radius:30px;margin-bottom:24px;">'+s.trust_badge+'</div>':'')+'<h1 style="font-size:clamp(28px,5vw,58px);font-weight:900;color:#fff;line-height:1.08;margin:0 0 18px;text-shadow:0 3px 24px rgba(0,0,0,0.4);">'+(s.heading||'')+'</h1><p style="font-size:18px;color:rgba(255,255,255,0.88);margin:0 0 34px;max-width:620px;margin-left:auto;margin-right:auto;">'+(s.subheading||'')+'</p><div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">'+btn(s.cta1_text||'Get Started',s.cta1_url||'#',c.p)+btnOutline(s.cta2_text||'Learn More',s.cta2_url||'#')+'</div></div>';
+    return heroWrap(ov+';position:relative','<div style="position:absolute;inset:0;background:rgba(0,0,0,0.58);"></div>'+h,'520px');
+}
+
+// ── Content section renderers ──────────────────────────────────────────────
+function secWrap(bg_css, content, pad) {
+    return '<section style="'+bg_css+';padding:'+(pad||'70px 50px')+';">'+content+'</section>';
+}
+function renderStats(s,c) {
+    var items=(s.stats||[{num:'500+',label:'Clients'},{num:'10+',label:'Years'},{num:'98%',label:'Satisfaction'},{num:'24/7',label:'Support'}]);
+    var h='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:20px;">'+items.map(st=>'<div style="text-align:center;padding:20px 10px;"><div style="font-size:44px;font-weight:900;background:linear-gradient(135deg,'+c.p+','+c.s+');-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">'+st.num+'</div><div style="font-size:11px;color:'+c.tm+';margin-top:6px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">'+(st.label||st.lbl||'')+'</div></div>').join('')+'</div>';
+    return secWrap('background:#fff',h,'30px 50px');
+}
+function renderServicesGrid(s,c) {
+    var items=s.items||[];
+    var h=badge('Our Services',c.p)+'<h2 style="font-size:36px;font-weight:800;color:'+c.td+';margin:0 0 8px;">'+(s.heading||'Our Services')+'</h2><p style="color:'+c.tm+';margin:0 0 36px;">'+(s.subheading||'')+'</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;">'+items.map(it=>'<div style="background:#fff;border-radius:16px;padding:28px 22px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.08);border-top:4px solid '+c.p+';transition:transform 0.3s;" onmouseover="this.style.transform=\'translateY(-6px)\'" onmouseout="this.style.transform=\'none\'"><div style="width:60px;height:60px;background:linear-gradient(135deg,'+c.p+','+c.s+');border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;"><i class="'+(it.icon||'fas fa-star')+'" style="font-size:24px;color:#fff;"></i></div><h3 style="font-size:16px;font-weight:800;color:'+c.td+';margin:0 0 10px;">'+(it.title||it.t||'')+'</h3><p style="color:'+c.tm+';font-size:13px;line-height:1.65;margin:0;">'+(it.desc||it.d||'')+'</p></div>').join('')+'</div>';
+    return secWrap('background:'+c.sbg,h);
+}
+function renderServicesList(s,c) {
+    var items=s.items||[];
+    var h=badge('Services',c.p)+'<h2 style="font-size:36px;font-weight:800;color:'+c.td+';margin:0 0 30px;">'+(s.heading||'')+'</h2><div style="display:flex;flex-direction:column;gap:12px;max-width:860px;margin:0 auto;">'+items.map(it=>'<div style="background:#fff;border-radius:12px;padding:18px 22px;display:flex;align-items:center;gap:16px;box-shadow:0 2px 12px rgba(0,0,0,0.06);"><div style="width:48px;height:48px;background:linear-gradient(135deg,'+c.p+','+c.s+');border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="'+(it.icon||'fas fa-check')+'" style="font-size:20px;color:#fff;"></i></div><div><h3 style="font-size:15px;font-weight:800;color:'+c.td+';margin:0 0 4px;">'+(it.title||it.t||'')+'</h3><p style="color:'+c.tm+';font-size:13px;margin:0;">'+(it.desc||it.d||'')+'</p></div><i class="fas fa-arrow-right" style="margin-left:auto;color:'+c.p+';"></i></div>').join('')+'</div>';
+    return secWrap('background:#fff',h);
+}
+function renderAbout(s,c,img) {
+    var hi=(s.highlights||[]).map(p=>'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div style="width:22px;height:22px;background:linear-gradient(135deg,'+c.p+','+c.s+');border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-check" style="font-size:9px;color:#fff;"></i></div><span style="font-size:13px;color:'+c.td+';font-weight:500;">'+p+'</span></div>').join('');
+    var left='<div style="flex:1;padding:20px;">'+badge('About Us',c.p)+'<h2 style="font-size:34px;font-weight:800;color:'+c.td+';margin:0 0 10px;">'+(s.heading||'')+'</h2><p style="font-size:13px;color:'+c.p+';font-style:italic;margin:0 0 12px;font-weight:600;">'+(s.tagline||'')+'</p><p style="font-size:13px;color:'+c.tm+';line-height:1.85;margin:0 0 20px;">'+(s.content||'')+'</p>'+hi+(s.cta_text?btn(s.cta_text,s.cta_url||'#',c.p):'')+'</div>';
+    var right=img?'<div style="flex:0 0 42%;border-radius:18px;overflow:hidden;max-height:420px;"><img src="'+img+'" style="width:100%;height:100%;object-fit:cover;" alt="About"></div>':'<div style="flex:0 0 42%;background:linear-gradient(135deg,'+c.p+','+c.s+');border-radius:18px;min-height:300px;"></div>';
+    return secWrap('background:#fff','<div style="display:flex;gap:40px;align-items:center;flex-wrap:wrap;">'+left+right+'</div>');
+}
+function renderProcess(s,c) {
+    var steps=s.steps||[];
+    var h=badge('How It Works',c.p)+'<h2 style="font-size:36px;font-weight:800;color:#fff;margin:0 0 8px;">'+(s.heading||'Our Process')+'</h2><p style="color:rgba(255,255,255,0.8);margin:0 0 36px;">'+(s.subheading||'')+'</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:20px;">'+steps.map((st,i)=>'<div style="text-align:center;"><div style="width:56px;height:56px;background:'+c.p+';border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:0 8px 20px '+c.p+'44;"><span style="font-size:18px;font-weight:900;color:#fff;">'+(st.num||i+1)+'</span></div><h3 style="font-size:15px;font-weight:700;color:#fff;margin:0 0 6px;">'+(st.title||st.t||'')+'</h3><p style="font-size:12px;color:rgba(255,255,255,0.75);line-height:1.6;">'+(st.desc||st.d||'')+'</p></div>').join('')+'</div>';
+    return secWrap('background:linear-gradient(135deg,'+c.p+','+c.s+')',h);
+}
+function renderWhyUs(s,c) {
+    var items=s.items||[];
+    var h=badge('Why Choose Us',c.p)+'<h2 style="font-size:36px;font-weight:800;color:#fff;margin:0 0 8px;">'+(s.heading||'')+'</h2><p style="color:rgba(255,255,255,0.8);margin:0 0 36px;">'+(s.subheading||'')+'</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;">'+items.map(it=>'<div style="background:rgba(255,255,255,0.08);border-radius:14px;padding:24px;border:1px solid rgba(255,255,255,0.12);"><div style="display:flex;gap:12px;align-items:flex-start;"><div style="width:44px;height:44px;background:'+c.a+';border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="'+(it.icon||'fas fa-check')+'" style="font-size:18px;color:#fff;"></i></div><div><h3 style="font-size:15px;font-weight:700;color:#fff;margin:0 0 6px;">'+(it.title||it.t||'')+'</h3><p style="color:rgba(255,255,255,0.72);font-size:12px;line-height:1.6;margin:0;">'+(it.desc||it.d||'')+'</p></div></div></div>').join('')+'</div>';
+    return secWrap('background:linear-gradient(135deg,'+c.s+','+c.bg+')',h);
+}
+function renderTestimonials(s,c) {
+    var items=s.items||[];
+    var h=badge('Testimonials',c.p)+'<h2 style="font-size:36px;font-weight:800;color:'+c.td+';margin:0 0 30px;">'+(s.heading||'What Clients Say')+'</h2><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;">'+items.map(t=>'<div style="background:#fff;border-radius:18px;padding:26px;box-shadow:0 6px 24px rgba(0,0,0,0.08);"><div style="color:#FFB800;font-size:14px;margin-bottom:12px;">'+'★'.repeat(t.rating||5)+'</div><p style="color:'+c.tm+';font-size:13px;line-height:1.8;font-style:italic;margin:0 0 16px;">'+(t.text||t.txt||'')+'</p><div style="display:flex;align-items:center;gap:10px;"><div style="width:36px;height:36px;background:linear-gradient(135deg,'+c.p+','+c.s+');border-radius:50%;display:flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:12px;font-weight:800;">'+(t.name||'C').charAt(0)+'</span></div><div><strong style="color:'+c.td+';font-size:12px;display:block;">'+(t.name||'')+'</strong><span style="color:'+c.tm+';font-size:11px;">'+(t.role||'')+'</span></div></div></div>').join('')+'</div>';
+    return secWrap('background:'+c.sbg,h);
+}
+function renderTeam(s,c) {
+    var items=s.items||[];
+    var h=badge('Our Team',c.p)+'<h2 style="font-size:36px;font-weight:800;color:'+c.td+';margin:0 0 8px;">'+(s.heading||'Meet Our Team')+'</h2><p style="color:'+c.tm+';margin:0 0 32px;">'+(s.subheading||'')+'</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;">'+items.map(m=>{var init=(m.name||'T').charAt(0)+((m.name||'').split(' ')[1]||'').charAt(0);return '<div style="background:#fff;border-radius:18px;padding:30px 20px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.08);"><div style="width:72px;height:72px;background:linear-gradient(135deg,'+c.p+','+c.s+');border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;"><span style="font-size:22px;font-weight:900;color:#fff;">'+init+'</span></div><h3 style="font-size:15px;font-weight:800;color:'+c.td+';margin:0 0 4px;">'+(m.name||'')+'</h3><p style="font-size:11px;color:'+c.p+';text-transform:uppercase;letter-spacing:1px;margin:0 0 10px;font-weight:700;">'+(m.role||'')+'</p><p style="font-size:12px;color:'+c.tm+';line-height:1.6;margin:0;">'+(m.bio||'')+'</p></div>';}).join('')+'</div>';
+    return secWrap('background:#fff',h);
+}
+function renderFaq(s,c) {
+    var items=s.items||[];
+    var h=badge('FAQ',c.p)+'<h2 style="font-size:36px;font-weight:800;color:'+c.td+';margin:0 0 8px;">'+(s.heading||'FAQs')+'</h2><p style="color:'+c.tm+';margin:0 0 30px;">'+(s.subheading||'')+'</p><div style="max-width:780px;margin:0 auto;">'+items.map((fq,i)=>'<div style="background:#fff;border-radius:12px;margin-bottom:10px;box-shadow:0 2px 12px rgba(0,0,0,0.06);overflow:hidden;"><div style="padding:18px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="var a=this.nextElementSibling;a.style.display=a.style.display===\'none\'?\'\':\'none\'"><h3 style="font-size:14px;font-weight:700;color:'+c.td+';margin:0;">'+(i+1)+'. '+(fq.q||fq.question||'')+'</h3><div style="width:26px;height:26px;background:'+c.p+';border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-size:14px;color:#fff;font-weight:700;">+</span></div></div><div style="display:none;padding:0 20px 16px;border-top:1px solid #f4f4f4;"><p style="font-size:13px;color:'+c.tm+';line-height:1.75;margin:12px 0 0;">'+(fq.a||fq.answer||'')+'</p></div></div>').join('')+'</div>';
+    return secWrap('background:'+c.sbg,h);
+}
+function renderCta(s,c,img,wa) {
+    var waLink=wa?'https://wa.me/'+wa.replace(/[^0-9]/g,''):'#contact';
+    var bgCss=img?'background:url('+img+') center/cover no-repeat;position:relative':'background:linear-gradient(135deg,'+c.p+','+c.s+')';
+    var h=(img?'<div style="position:absolute;inset:0;background:rgba(0,0,0,0.72);"></div>':'')+'<div style="text-align:center;max-width:700px;margin:0 auto;position:relative;z-index:1;">'+(s.heading?'<h2 style="font-size:clamp(26px,4vw,44px);font-weight:900;color:#fff;margin:0 0 14px;">'+s.heading+'</h2>':'')+(s.subheading?'<p style="font-size:17px;color:rgba(255,255,255,0.87);margin:0 0 24px;">'+s.subheading+'</p>':'')+(s.phone?'<div style="font-size:24px;color:#fff;font-weight:800;margin-bottom:22px;">📞 '+s.phone+'</div>':'')+(s.cta_text?btn(s.cta_text,waLink,'#fff'):'')+'</div>';
+    return secWrap(bgCss,h,'90px 50px');
+}
+function renderAppointment(s,c,wa) {
+    var waLink=wa?'https://wa.me/'+wa.replace(/[^0-9]/g,''):'tel:+919876543210';
+    var h='<div style="background:linear-gradient(135deg,'+c.p+','+c.s+');border-radius:22px;padding:44px;text-align:center;color:#fff;box-shadow:0 12px 44px '+c.p+'44;"><div style="font-size:40px;margin-bottom:14px;">📅</div><h2 style="font-size:32px;font-weight:900;margin:0 0 12px;">'+(s.heading||'Book Your Appointment')+'</h2><p style="font-size:16px;opacity:0.88;margin:0 0 26px;">'+(s.subheading||'Book your free consultation today')+'</p><div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;"><a href="'+waLink+'" style="background:#25D366;color:#fff;padding:13px 28px;border-radius:50px;font-size:14px;font-weight:800;text-decoration:none;">💬 WhatsApp</a><a href="#contact" style="background:rgba(255,255,255,0.15);color:#fff;padding:13px 28px;border-radius:50px;font-size:14px;font-weight:800;text-decoration:none;border:2px solid rgba(255,255,255,0.4);">📅 Book Online</a></div></div>';
+    return secWrap('background:'+c.sbg,h,'50px 50px');
+}
+function renderBeforeAfter(s,c) {
+    var h=badge('Results',c.p)+'<h2 style="font-size:36px;font-weight:800;color:'+c.td+';margin:0 0 30px;">'+(s.heading||'Before & After')+'</h2><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;">'+[1,2,3].map(i=>'<div style="border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.1);"><div style="display:grid;grid-template-columns:1fr 1fr;"><div style="background:#e8e8e8;height:180px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;"><i class="fas fa-user" style="font-size:24px;color:#aaa;"></i><span style="font-size:9px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:1px;">Before</span></div><div style="background:linear-gradient(135deg,'+c.p+'55,'+c.s+'55);height:180px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;"><i class="fas fa-star" style="font-size:24px;color:'+c.p+';"></i><span style="font-size:9px;font-weight:700;color:'+c.p+';text-transform:uppercase;letter-spacing:1px;">After</span></div></div><div style="padding:10px;background:#fff;text-align:center;"><p style="font-size:12px;font-weight:700;color:'+c.td+';margin:0;">Result '+i+'</p></div></div>').join('')+'</div>';
+    return secWrap('background:#fff',h);
+}
+function renderPricing(s,c) {
+    var items=s.items||[];
+    var h=badge('Pricing',c.p)+'<h2 style="font-size:36px;font-weight:800;color:'+c.td+';margin:0 0 30px;">'+(s.heading||'Our Plans')+'</h2><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;align-items:start;">'+items.map((plan,i)=>{var pop=plan.popular;return '<div style="background:'+(pop?'linear-gradient(135deg,'+c.p+','+c.s+')':'#fff')+';border-radius:20px;padding:32px 24px;text-align:center;box-shadow:0 6px 30px rgba(0,0,0,'+(pop?'0.2':'0.09')+');'+(pop?'transform:scale(1.04);position:relative;':'')+'"><h3 style="font-size:18px;font-weight:800;color:'+(pop?'#fff':c.td)+';margin:0 0 8px;">'+(plan.name||'')+'</h3><div style="font-size:42px;font-weight:900;color:'+(pop?'#fff':c.p)+';margin-bottom:4px;">'+(plan.price||'')+'</div><div style="font-size:13px;color:'+(pop?'rgba(255,255,255,0.7)':c.tm)+';margin-bottom:20px;">'+(plan.period||'per month')+'</div><div style="margin-bottom:20px;">'+(plan.features||[]).map(f=>'<div style="padding:8px 0;border-bottom:1px solid '+(pop?'rgba(255,255,255,0.15)':'#f0f0f0')+';font-size:13px;color:'+(pop?'rgba(255,255,255,0.9)':c.tm)+';">✓ '+f+'</div>').join('')+'</div><a href="#contact" style="display:block;background:'+(pop?'#fff':c.p)+';color:'+(pop?c.p:'#fff')+';padding:12px;border-radius:50px;font-weight:700;font-size:14px;text-decoration:none;">Get Started →</a></div>';}).join('')+'</div>';
+    return secWrap('background:'+c.sbg,h);
+}
+function renderAwards(s,c) {
+    var awards=['🏆 Best in Class 2024','⭐ ISO Certified','🎖️ Industry Leader','✅ Google Verified','🥇 Top Rated 2025','🌟 5-Star Rating'];
+    var h=badge('Recognition',c.p)+'<h2 style="font-size:34px;font-weight:800;color:'+c.td+';margin:0 0 24px;">'+(s.heading||'Awards & Certifications')+'</h2><div style="display:flex;flex-wrap:wrap;gap:12px;">'+awards.map(a=>'<div style="background:#fff;border:2px solid '+c.p+'22;border-radius:12px;padding:12px 22px;font-size:13px;font-weight:700;color:'+c.td+';box-shadow:0 2px 12px rgba(0,0,0,0.05);">'+a+'</div>').join('')+'</div>';
+    return secWrap('background:#fff',h,'60px 50px');
+}
+function renderTreatment(s,c) {
+    var items=s.items||[];
+    var h=badge('Treatments',c.p)+'<h2 style="font-size:36px;font-weight:800;color:'+c.td+';margin:0 0 8px;">'+(s.heading||'Our Treatments')+'</h2><p style="color:'+c.tm+';margin:0 0 32px;">'+(s.subheading||'')+'</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;">'+items.map(it=>'<div style="background:#fff;border-radius:16px;padding:26px;box-shadow:0 3px 18px rgba(0,0,0,0.08);display:flex;gap:16px;align-items:flex-start;"><div style="width:52px;height:52px;background:linear-gradient(135deg,'+c.p+','+c.s+');border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="'+(it.icon||'fas fa-star')+'" style="font-size:22px;color:#fff;"></i></div><div style="flex:1;"><h3 style="font-size:16px;font-weight:800;color:'+c.td+';margin:0 0 6px;">'+(it.name||'')+'</h3><p style="font-size:12px;color:'+c.tm+';line-height:1.65;margin:0 0 12px;">'+(it.desc||'')+'</p><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:18px;font-weight:900;color:'+c.p+';">'+(it.price||'')+'</span><a href="#contact" style="background:'+c.p+';color:#fff;padding:7px 16px;border-radius:50px;font-size:12px;font-weight:700;text-decoration:none;">Book</a></div></div></div>').join('')+'</div>';
+    return secWrap('background:'+c.sbg,h);
+}
+function renderServiceShowcase(s,c) {
+    var items=s.items||[];
+    var h=badge('Services',c.p)+'<h2 style="font-size:36px;font-weight:800;color:'+c.td+';margin:0 0 8px;">'+(s.heading||'Our Services')+'</h2><p style="color:'+c.tm+';margin:0 0 32px;">'+(s.subheading||'')+'</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;">'+items.map(it=>'<div style="background:#fff;border-radius:16px;padding:24px;box-shadow:0 3px 16px rgba(0,0,0,0.07);"><div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;"><div style="width:46px;height:46px;background:linear-gradient(135deg,'+c.p+','+c.s+');border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="'+(it.icon||'fas fa-star')+'" style="font-size:20px;color:#fff;"></i></div><div><h3 style="font-size:15px;font-weight:800;color:'+c.td+';margin:0;">'+(it.name||'')+'</h3><span style="font-size:11px;color:'+c.tm+';">⏱ '+(it.duration||'')+'</span></div></div><p style="font-size:12px;color:'+c.tm+';margin:0 0 12px;">'+(it.desc||it.d2||'')+'</p><div style="display:flex;justify-content:space-between;border-top:1px solid #f0f0f0;padding-top:12px;"><span style="font-size:20px;font-weight:900;color:'+c.p+';">'+(it.price||'')+'</span><a href="#contact" style="background:'+c.p+';color:#fff;padding:7px 16px;border-radius:50px;font-size:12px;font-weight:700;text-decoration:none;">Book</a></div></div>').join('')+'</div>';
+    return secWrap('background:#fff',h);
+}
+function renderProducts(s,c) {
+    var items=s.items||[];
+    var h=badge('Products',c.p)+'<h2 style="font-size:36px;font-weight:800;color:'+c.td+';margin:0 0 8px;">'+(s.heading||'Featured Products')+'</h2><p style="color:'+c.tm+';margin:0 0 32px;">'+(s.subheading||'')+'</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;">'+items.map(it=>'<div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 3px 18px rgba(0,0,0,0.08);"><div style="height:160px;background:linear-gradient(135deg,'+c.p+'22,'+c.s+'22);display:flex;align-items:center;justify-content:center;position:relative;"><i class="fas fa-box" style="font-size:48px;color:'+c.p+'66;"></i>'+(it.badge?'<div style="position:absolute;top:8px;left:8px;background:'+c.p+';color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;">'+it.badge+'</div>':'')+'</div><div style="padding:14px;"><h3 style="font-size:14px;font-weight:700;color:'+c.td+';margin:0 0 4px;">'+(it.name||'')+'</h3><div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;"><span style="font-size:18px;font-weight:900;color:'+c.p+';">'+(it.price||'')+'</span>'+(it.original?'<span style="font-size:11px;color:'+c.tm+';text-decoration:line-through;">'+it.original+'</span>':'')+'</div><button style="width:100%;background:'+c.p+';color:#fff;border:none;padding:9px;border-radius:50px;font-size:12px;font-weight:700;cursor:pointer;">Add to Cart 🛒</button></div></div>').join('')+'</div>';
+    return secWrap('background:'+c.sbg,h);
+}
+function renderCategories(s,c) {
+    var items=s.items||[];
+    var h=badge('Categories',c.p)+'<h2 style="font-size:32px;font-weight:800;color:'+c.td+';margin:0 0 24px;">'+(s.heading||'Shop By Category')+'</h2><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:14px;">'+items.map(it=>'<div style="background:#fff;border-radius:14px;padding:20px 12px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,0.06);cursor:pointer;transition:all 0.3s;" onmouseover="this.style.background=\''+c.p+'\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'#fff\';this.style.color=\'\'"><i class="'+(it.icon||'fas fa-star')+'" style="font-size:28px;color:'+c.p+';display:block;margin-bottom:8px;"></i><p style="font-size:12px;font-weight:700;color:'+c.tm+';margin:0;">'+(it.name||'')+'</p></div>').join('')+'</div>';
+    return secWrap('background:#fff',h,'50px 50px');
+}
+function renderDeals(s,c) {
+    var items=s.items||[];
+    var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;"><div>'+badge('Limited Time',c.p)+'<h2 style="font-size:34px;font-weight:800;color:'+c.td+';margin:0;">'+(s.heading||'Deals of the Day')+'</h2></div><div style="background:'+c.p+';color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;">⏰ Ends in: <span style="font-size:18px;font-weight:900;">08:45:22</span></div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;">'+items.map(it=>'<div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,0.08);"><div style="height:140px;background:linear-gradient(135deg,'+c.p+'22,'+c.s+'22);display:flex;align-items:center;justify-content:center;position:relative;"><i class="fas fa-box-open" style="font-size:48px;color:'+c.p+'66;"></i><div style="position:absolute;top:8px;left:8px;background:'+c.p+';color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;">'+(it.badge||'SALE')+'</div><div style="position:absolute;top:8px;right:8px;background:#FF3B30;color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;">-'+(it.discount||'')+'</div></div><div style="padding:12px;"><h3 style="font-size:13px;font-weight:700;color:'+c.td+';margin:0 0 8px;">'+(it.name||'')+'</h3><div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;"><span style="font-size:18px;font-weight:900;color:'+c.p+';">'+(it.price||'')+'</span>'+(it.original?'<span style="font-size:11px;color:'+c.tm+';text-decoration:line-through;">'+it.original+'</span>':'')+'</div><button style="width:100%;background:'+c.p+';color:#fff;border:none;padding:9px;border-radius:50px;font-size:11px;font-weight:700;cursor:pointer;">🛒 Add to Cart</button></div></div>').join('')+'</div>';
+    return secWrap('background:'+c.sbg,h);
+}
+function renderBrands(s,c) {
+    var brands=s.brands||[];
+    var h='<p style="text-align:center;font-size:12px;font-weight:700;color:'+c.tm+';text-transform:uppercase;letter-spacing:2px;margin:0 0 20px;">'+(s.heading||'Trusted By')+'</p><div style="display:flex;flex-wrap:wrap;justify-content:center;gap:12px;">'+brands.map(b=>'<div style="background:'+c.sbg+';border:1px solid #e8e8e8;border-radius:10px;padding:10px 22px;font-size:13px;font-weight:800;color:'+c.tm+';"> '+b+'</div>').join('')+'</div>';
+    return secWrap('background:#fff',h,'40px 50px');
+}
+function renderDoctor(s,c,img) {
+    var left=img?'<div style="flex:0 0 40%;background:url('+img+') center/cover no-repeat;min-height:450px;border-radius:18px 0 0 18px;"></div>':'<div style="flex:0 0 40%;background:linear-gradient(135deg,'+c.p+','+c.s+');min-height:450px;border-radius:18px 0 0 18px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-user-md" style="font-size:80px;color:rgba(255,255,255,0.3);"></i></div>';
+    var right='<div style="flex:1;background:'+c.td+';padding:44px;border-radius:0 18px 18px 0;">'+badge(s.badge||'Meet Our Expert',c.p)+'<h2 style="font-size:32px;font-weight:900;color:#fff;margin:0 0 12px;">'+(s.heading||'Expert Care You Can Trust')+'</h2><p style="font-size:14px;color:rgba(255,255,255,0.78);line-height:1.8;margin:0 0 22px;">'+(s.content||'')+'</p>'+(s.credentials||[]).map(cr=>'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><div style="width:20px;height:20px;background:'+c.p+';border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-check" style="font-size:8px;color:#fff;"></i></div><span style="font-size:13px;color:rgba(255,255,255,0.88);">'+cr+'</span></div>').join('')+(s.cta_text?'<div style="margin-top:18px;">'+btn(s.cta_text,s.cta_url||'#',c.p)+'</div>':'')+'</div>';
+    return secWrap('background:'+c.sbg,'<div style="display:flex;flex-wrap:wrap;border-radius:18px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.12);">'+left+right+'</div>');
+}
+function renderMasonry(s,c,imgs) {
+    var grads=['linear-gradient(135deg,'+c.p+','+c.s+')','linear-gradient(135deg,#667eea,#764ba2)','linear-gradient(135deg,#f093fb,#f5576c)','linear-gradient(135deg,#4facfe,#00f2fe)','linear-gradient(135deg,#43e97b,#38f9d7)'];
+    var h=badge(s.badge||'Our Work',c.p)+'<h2 style="font-size:36px;font-weight:800;color:'+c.td+';margin:0 0 30px;">'+(s.heading||'Showcase')+'</h2><div style="display:grid;grid-template-columns:2fr 1fr 1fr;grid-template-rows:200px 200px;gap:12px;">'+(imgs[0]?'<div style="grid-row:span 2;border-radius:14px;overflow:hidden;"><img src="'+imgs[0]+'" style="width:100%;height:100%;object-fit:cover;" alt="showcase"></div>':'<div style="grid-row:span 2;border-radius:14px;background:'+grads[0]+';"></div>')+[1,2,3,4].map((i)=>imgs[i]?'<div style="border-radius:14px;overflow:hidden;"><img src="'+imgs[i]+'" style="width:100%;height:100%;object-fit:cover;" alt="showcase '+i+'"></div>':'<div style="border-radius:14px;background:'+grads[i%5]+';"></div>').join('')+'</div>';
+    return secWrap('background:#fff',h);
+}
+function renderMenu(s,c) {
+    var cats=s.categories||[];
+    var h=badge('Menu',c.p)+'<h2 style="font-size:36px;font-weight:800;color:'+c.td+';margin:0 0 24px;">'+(s.heading||'Our Menu')+'</h2>'+cats.map(cat=>'<h3 style="font-size:20px;font-weight:800;color:'+c.p+';margin:24px 0 12px;padding-bottom:6px;border-bottom:2px solid '+c.p+'33;">🍽️ '+cat.name+'</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">'+(cat.items||[]).map(it=>'<div style="background:#fff;border-radius:10px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,0.05);"><div><h4 style="font-size:14px;font-weight:700;color:'+c.td+';margin:0 0 3px;">'+it.name+'</h4><p style="font-size:12px;color:'+c.tm+';margin:0;">'+(it.desc||'')+'</p></div><span style="font-size:16px;font-weight:900;color:'+c.p+';flex-shrink:0;margin-left:10px;">'+it.price+'</span></div>').join('')+'</div>').join('');
+    return secWrap('background:'+c.sbg,h);
+}
+function renderSchedule(s,c) {
+    var days=s.schedule||[];
+    var h=badge('Schedule',c.p)+'<h2 style="font-size:36px;font-weight:800;color:'+c.td+';margin:0 0 24px;">'+(s.heading||'Class Schedule')+'</h2><div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">'+days.map((d,i)=>'<tr style="background:'+(i%2===0?'#FFFFFF':c.sbg)+'"><td style="padding:14px 18px;font-weight:800;color:'+c.p+';font-size:13px;border-bottom:1px solid #f0f0f0;width:90px;">'+d.day+'</td><td style="padding:14px 18px;color:'+c.tm+';font-size:13px;border-bottom:1px solid #f0f0f0;">'+d.classes+'</td></tr>').join('')+'</table></div>';
+    return secWrap('background:#fff',h);
+}
+function renderProperties(s,c,imgs) {
+    var items=s.items||[];
+    var h=badge('Properties',c.p)+'<h2 style="font-size:36px;font-weight:800;color:'+c.td+';margin:0 0 30px;">'+(s.heading||'Featured Properties')+'</h2><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;">'+items.map((p,i)=>'<div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,0.09);">'+(imgs[i]?'<div style="height:190px;overflow:hidden;"><img src="'+imgs[i]+'" style="width:100%;height:100%;object-fit:cover;"></div>':'<div style="height:190px;background:linear-gradient(135deg,'+c.p+'bb,'+c.s+');display:flex;align-items:center;justify-content:center;"><i class="fas fa-home" style="font-size:54px;color:rgba(255,255,255,0.3);"></i></div>')+'<div style="padding:18px;"><h3 style="font-size:16px;font-weight:800;color:'+c.td+';margin:0 0 6px;">'+p.title+'</h3><p style="color:'+c.tm+';font-size:12px;margin:0 0 10px;">📍 '+p.location+'</p><div style="display:flex;gap:14px;margin-bottom:12px;"><span style="font-size:12px;color:'+c.tm+';">🛏 '+p.beds+'</span><span style="font-size:12px;color:'+c.tm+';">📐 '+p.area+'</span></div><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:20px;font-weight:900;color:'+c.p+';">'+p.price+'</span><a href="#contact" style="background:'+c.p+';color:#fff;padding:8px 18px;border-radius:50px;font-size:12px;font-weight:700;text-decoration:none;">Enquire →</a></div></div></div>').join('')+'</div>';
+    return secWrap('background:'+c.sbg,h);
+}
+function renderTours(s,c,imgs) {
+    var items=s.items||[];
+    var h=badge('Packages',c.p)+'<h2 style="font-size:36px;font-weight:800;color:'+c.td+';margin:0 0 8px;">'+(s.heading||'Popular Packages')+'</h2><p style="color:'+c.tm+';margin:0 0 30px;">'+(s.subheading||'')+'</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;">'+items.map((item,i)=>'<div style="background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 6px 28px rgba(0,0,0,0.09);">'+(imgs[i]?'<div style="height:180px;overflow:hidden;position:relative;"><img src="'+imgs[i]+'" style="width:100%;height:100%;object-fit:cover;"><div style="position:absolute;top:12px;right:12px;background:'+c.p+';color:#fff;font-size:10px;font-weight:800;padding:4px 12px;border-radius:20px;">'+(item.badge||'POPULAR')+'</div></div>':'<div style="height:180px;background:linear-gradient(135deg,'+c.p+'cc,'+c.s+');display:flex;align-items:center;justify-content:center;"><i class="fas fa-plane" style="font-size:54px;color:rgba(255,255,255,0.3);"></i></div>')+'<div style="padding:18px;"><h3 style="font-size:16px;font-weight:800;color:'+c.td+';margin:0 0 4px;">'+(item.name||'')+'</h3><p style="color:'+c.tm+';font-size:12px;margin:0 0 12px;">📅 '+(item.duration||'')+'</p>'+(item.highlights||[]).map(h=>'<div style="font-size:12px;color:'+c.tm+';margin-bottom:4px;">✅ '+h+'</div>').join('')+'<div style="border-top:1px solid #f0f0f0;padding-top:12px;margin-top:12px;display:flex;justify-content:space-between;align-items:center;"><div><div style="font-size:22px;font-weight:900;color:'+c.p+';">'+(item.price||'')+'</div><div style="font-size:10px;color:'+c.tm+';">'+(item.per||'per person')+'</div></div><a href="#contact" style="background:'+c.p+';color:#fff;padding:9px 18px;border-radius:50px;font-size:12px;font-weight:700;text-decoration:none;">Book →</a></div></div></div>').join('')+'</div>';
+    return secWrap('background:'+c.sbg,h);
+}
+function renderRooms(s,c,imgs) {
+    var items=s.items||[];
+    var h=badge(s.badge||'Rooms',c.p)+'<h2 style="font-size:36px;font-weight:800;color:'+c.td+';margin:0 0 30px;">'+(s.heading||'Rooms & Suites')+'</h2><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;">'+items.map((item,i)=>'<div style="background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 6px 26px rgba(0,0,0,0.09);">'+(imgs[i]?'<div style="height:190px;overflow:hidden;"><img src="'+imgs[i]+'" style="width:100%;height:100%;object-fit:cover;"></div>':'<div style="height:190px;background:linear-gradient(135deg,'+c.p+'bb,'+c.s+');display:flex;align-items:center;justify-content:center;"><i class="fas fa-bed" style="font-size:60px;color:rgba(255,255,255,0.3);"></i></div>')+'<div style="padding:18px;"><h3 style="font-size:16px;font-weight:800;color:'+c.td+';margin:0 0 8px;">'+(item.name||'')+'</h3><div style="display:flex;gap:12px;margin-bottom:12px;"><span style="font-size:11px;color:'+c.tm+';">📐 '+(item.size||'')+'</span><span style="font-size:11px;color:'+c.tm+';">👥 '+(item.guests||'')+'</span></div><div style="margin-bottom:12px;">'+(item.features||[]).map(f=>'<span style="display:inline-block;background:'+c.sbg+';color:'+c.td+';font-size:10px;padding:3px 8px;border-radius:20px;margin:2px;">'+f+'</span>').join('')+'</div><div style="border-top:1px solid #f0f0f0;padding-top:12px;display:flex;justify-content:space-between;align-items:center;"><span><span style="font-size:22px;font-weight:900;color:'+c.p+';">'+(item.price||'')+'</span><span style="font-size:11px;color:'+c.tm+';">/'+(item.per||'night')+'</span></span><a href="#contact" style="background:'+c.p+';color:#fff;padding:9px 18px;border-radius:50px;font-size:12px;font-weight:700;text-decoration:none;">Book</a></div></div></div>').join('')+'</div>';
+    return secWrap('background:#fff',h);
+}
+function renderBlog(s,c) {
+    var items=s.items||[];
+    var h=badge('Blog',c.p)+'<h2 style="font-size:36px;font-weight:800;color:'+c.td+';margin:0 0 30px;">'+(s.heading||'Latest News')+'</h2><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;">'+items.map(it=>'<div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,0.07);"><div style="height:170px;background:linear-gradient(135deg,'+c.p+'cc,'+c.s+');display:flex;align-items:center;justify-content:center;"><i class="fas fa-newspaper" style="font-size:44px;color:rgba(255,255,255,0.25);"></i></div><div style="padding:18px;"><div style="display:flex;gap:8px;margin-bottom:10px;"><span style="background:'+c.p+'18;color:'+c.p+';font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;text-transform:uppercase;">'+(it.category||'Article')+'</span><span style="color:'+c.tm+';font-size:10px;">⏱ '+(it.read_time||'5 min')+'</span></div><h3 style="font-size:14px;font-weight:800;color:'+c.td+';margin:0 0 6px;line-height:1.4;">'+(it.title||'')+'</h3><p style="font-size:12px;color:'+c.tm+';margin:0 0 12px;">'+(it.desc||it.d||'')+'</p><a href="#" style="color:'+c.p+';font-size:12px;font-weight:700;text-decoration:none;">Read More →</a></div></div>').join('')+'</div>';
+    return secWrap('background:#fff',h);
+}
+function renderNews(s,c) {
+    var items=s.items||[];
+    var feat=items[0]||{};
+    var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:3px solid '+c.p+';padding-bottom:10px;"><h2 style="font-size:26px;font-weight:900;color:'+c.td+';margin:0;">'+(s.heading||'Latest News')+'</h2><a href="#" style="color:'+c.p+';font-size:12px;font-weight:700;text-decoration:none;">View All →</a></div><div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;"><div style="background:linear-gradient(135deg,'+c.p+'cc,'+c.s+'cc);border-radius:16px;padding:28px;display:flex;align-items:flex-end;min-height:280px;"><div><span style="background:#fff;color:'+c.p+';font-size:10px;font-weight:800;padding:4px 10px;border-radius:20px;text-transform:uppercase;">'+(feat.category||'Featured')+'</span><h3 style="font-size:22px;font-weight:900;color:#fff;margin:10px 0 4px;line-height:1.3;">'+(feat.title||'')+'</h3><p style="font-size:12px;color:rgba(255,255,255,0.75);">'+(feat.time||'')+'</p></div></div><div style="display:flex;flex-direction:column;gap:12px;">'+items.slice(1).map(it=>'<div style="background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 12px rgba(0,0,0,0.06);border-left:4px solid '+c.p+';"><span style="font-size:10px;font-weight:700;color:'+c.p+';text-transform:uppercase;">'+(it.category||'')+'</span><h4 style="font-size:13px;font-weight:700;color:'+c.td+';margin:4px 0;line-height:1.4;">'+(it.title||'')+'</h4><p style="font-size:11px;color:'+c.tm+';margin:0;">'+(it.time||'')+'</p></div>').join('')+'</div></div>';
+    return secWrap('background:'+c.sbg,h);
+}
+function renderContact(s,c,wa) {
+    var waLink=wa?'https://wa.me/'+wa.replace(/[^0-9]/g,''):'#';
+    var info='<div>'+badge('Contact',c.p)+'<h2 style="font-size:34px;font-weight:800;color:'+c.td+';margin:0 0 12px;">'+(s.heading||'Contact Us')+'</h2><p style="color:'+c.tm+';margin:0 0 26px;">'+(s.subheading||'')+'</p><div style="display:flex;flex-direction:column;gap:16px;">'+'<div style="display:flex;align-items:center;gap:14px;"><div style="width:44px;height:44px;background:linear-gradient(135deg,'+c.p+','+c.s+');border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-phone" style="color:#fff;font-size:16px;"></i></div><div><p style="font-size:10px;color:'+c.tm+';margin:0;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Phone</p><p style="font-size:14px;font-weight:700;color:'+c.td+';margin:0;">'+(wa||'+91 98765 43210')+'</p></div></div>'+'<div style="display:flex;align-items:center;gap:14px;"><div style="width:44px;height:44px;background:linear-gradient(135deg,'+c.p+','+c.s+');border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-map-marker-alt" style="color:#fff;font-size:16px;"></i></div><div><p style="font-size:10px;color:'+c.tm+';margin:0;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Location</p><p style="font-size:14px;font-weight:700;color:'+c.td+';margin:0;">New Delhi, India</p></div></div>'+'</div>'+(wa?'<div style="margin-top:20px;"><a href="'+waLink+'" style="background:#25D366;color:#fff;padding:12px 28px;border-radius:50px;font-size:14px;font-weight:700;text-decoration:none;display:inline-block;">💬 Chat on WhatsApp</a></div>':'')+'</div>';
+    var form='<div style="background:'+c.sbg+';border-radius:18px;padding:28px;"><h3 style="font-size:20px;font-weight:800;color:'+c.td+';margin:0 0 18px;">Send a Message</h3><div style="display:flex;flex-direction:column;gap:12px;"><input type="text" placeholder="Your Name" style="padding:12px 16px;border:2px solid transparent;border-radius:10px;font-size:13px;background:#fff;outline:none;"><input type="email" placeholder="Email Address" style="padding:12px 16px;border:2px solid transparent;border-radius:10px;font-size:13px;background:#fff;outline:none;"><input type="tel" placeholder="Phone Number" style="padding:12px 16px;border:2px solid transparent;border-radius:10px;font-size:13px;background:#fff;outline:none;"><textarea placeholder="Your Message..." rows="3" style="padding:12px 16px;border:2px solid transparent;border-radius:10px;font-size:13px;background:#fff;outline:none;resize:vertical;"></textarea><button style="background:linear-gradient(135deg,'+c.p+','+c.s+');color:#fff;border:none;padding:14px;border-radius:50px;font-size:14px;font-weight:700;cursor:pointer;">Send Message →</button></div></div>';
+    return secWrap('background:#fff','<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start;flex-wrap:wrap;">'+info+form+'</div>');
+}
+function renderPortfolio(s,c,imgs) {
+    var grads=['linear-gradient(135deg,'+c.p+','+c.s+')','linear-gradient(135deg,#667eea,#764ba2)','linear-gradient(135deg,#f093fb,#f5576c)','linear-gradient(135deg,#4facfe,#00f2fe)','linear-gradient(135deg,#43e97b,#38f9d7)','linear-gradient(135deg,#fa709a,#fee140)'];
+    var h=badge('Portfolio',c.p)+'<h2 style="font-size:36px;font-weight:800;color:'+c.td+';margin:0 0 28px;">'+(s.heading||'Our Work')+'</h2><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">'+'<div style="grid-row:span 2;border-radius:14px;overflow:hidden;">'+(imgs[0]?'<img src="'+imgs[0]+'" style="width:100%;height:100%;object-fit:cover;" alt="portfolio">':'<div style="height:100%;min-height:300px;background:'+grads[0]+';"></div>')+'</div>'+[1,2,3,4].map((i)=>imgs[i]?'<div style="border-radius:14px;overflow:hidden;height:145px;"><img src="'+imgs[i]+'" style="width:100%;height:100%;object-fit:cover;"></div>':'<div style="border-radius:14px;height:145px;background:'+grads[i%6]+';"></div>').join('')+'</div>';
+    return secWrap('background:#fff',h);
+}
+function renderProjects(s,c,imgs) {
+    var items=s.items||[];
+    var h=badge('Projects',c.p)+'<h2 style="font-size:36px;font-weight:800;color:'+c.td+';margin:0 0 8px;">'+(s.heading||'Completed Projects')+'</h2><p style="color:'+c.tm+';margin:0 0 30px;">'+(s.subheading||'')+'</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;">'+items.map((item,i)=>'<div style="background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 6px 28px rgba(0,0,0,0.1);">'+(imgs[i]?'<div style="height:200px;overflow:hidden;"><img src="'+imgs[i]+'" style="width:100%;height:100%;object-fit:cover;"></div>':'<div style="height:200px;background:linear-gradient(135deg,'+c.p+'cc,'+c.s+');display:flex;align-items:center;justify-content:center;"><i class="fas fa-building" style="font-size:60px;color:rgba(255,255,255,0.3);"></i></div>')+'<div style="padding:18px;"><div style="display:inline-block;background:'+c.p+'18;color:'+c.p+';font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;margin-bottom:8px;">'+(item.type||'Project')+'</div><h3 style="font-size:16px;font-weight:800;color:'+c.td+';margin:0 0 6px;">'+(item.name||'')+'</h3><div style="display:flex;gap:14px;color:'+c.tm+';font-size:12px;margin-bottom:12px;flex-wrap:wrap;"><span>📍 '+(item.location||'')+'</span><span>📐 '+(item.area||'')+'</span><span>📅 '+(item.year||'')+'</span></div><a href="#contact" style="color:'+c.p+';font-size:13px;font-weight:700;text-decoration:none;border-bottom:2px solid '+c.p+';">View Details →</a></div></div>').join('')+'</div>';
+    return secWrap('background:'+c.sbg,h);
+}
+function renderGeneric(s,c) {
+    return secWrap('background:#fff',badge(s.type||'Section',c.p)+'<h2 style="font-size:34px;font-weight:800;color:'+c.td+';margin:0 0 8px;">'+(s.heading||'')+'</h2>'+(s.subheading?'<p style="color:'+c.tm+';">'+s.subheading+'</p>':''),'80px 50px');
+}
+
+// ── Main generate function ─────────────────────────────────────────────────
+async function generate() {
+    var bt  = document.getElementById('bt').value;
+    var bn  = document.getElementById('bn').value.trim();
+    var loc = document.getElementById('loc').value.trim();
+    var svc = document.getElementById('svc').value.trim();
+    var wa  = document.getElementById('wa').value.trim();
+    var ext = document.getElementById('ext').value.trim();
+    var ct  = document.getElementById('ct').value;
+    var ak  = localStorage.getItem('eab_groq_key') || document.getElementById('api-key').value.trim();
+    var uk  = localStorage.getItem('eab_uns_key')  || document.getElementById('uns-key').value.trim();
+
+    if(!bt || !bn) { alert('Industry aur Business Name zaroori hai!'); return; }
+    if(!ak)        { alert('Pehle Groq API key save karo!'); return; }
+
+    var c = themes[ct] || themes.blue_white;
+    var secs = getBlueprintSecs(bt);
+    var hero = getHero(bt);
+
+    document.getElementById('gen-btn').disabled = true;
+    document.getElementById('status').classList.add('show');
+    document.getElementById('result').classList.remove('show');
+    document.getElementById('log').innerHTML = '';
+
+    log('🧠 AI analyzing: '+bt+'...');
+    log('🎨 Hero style: '+hero);
+    log('📋 Section blueprint loaded: '+secs.length+' sections');
+    if(uk) log('🖼️ Fetching Unsplash images...');
+
+    // Fetch images
+    var imgKeywords = [bt+' '+bn+' professional', bt+' interior modern', bt+' team professional', bt+' service quality', bt+' results success'];
+    var imgs = [];
+    if(uk) {
+        document.getElementById('stxt').textContent = 'Fetching real images...';
+        for(var kw of imgKeywords) {
+            imgs.push(await fetchImg(kw, uk));
+        }
+        log('✅ Images ready: '+imgs.filter(Boolean).length+' fetched', 'ok');
+    }
+
+    // Build AI prompt
+    document.getElementById('stxt').textContent = 'AI generating content...';
+    var secList = [hero, ...secs].join(', ');
+    var prompt = 'You are a web designer. Generate content for "'+bn+'" ('+bt+(loc?' in '+loc:'')+').'+(svc?' Services: '+svc:'')+(ext?' Extra: '+ext:'')+'\n\nOutput ONLY a JSON object. No markdown. No backticks.\n\nSections to fill (in order): '+secList+'\n\nFor each section, write real specific content for this business.\n\nJSON format:\n{"hero":{"type":"'+hero+'","heading":"H","subheading":"S","cta1_text":"CTA","cta1_url":"#contact","cta2_text":"C2","cta2_url":"#services","trust_badge":"T","phone":"'+(wa||'+91 98765 43210')+'","stats":[{"num":"X+","label":"L"}],"features":["F1","F2","F3"]},"sections":[{"type":"SECTION_TYPE","heading":"H","subheading":"S","bg":"white","items":[...]}]}\n\nRules:\n1. heading must speak to visitor pain/desire\n2. All content must be SPECIFIC to '+bt+'\n3. Include real prices, services, team names\n4. For stats: use realistic numbers\n5. bg alternates: white, light, primary_gradient, dark_gradient\n6. Output ONLY JSON object starting with {';
+
+    try {
+        log('🤖 Calling Groq AI...');
+        var resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','Authorization':'Bearer '+ak},
+            body: JSON.stringify({model:'qwen/qwen3.8-27b',messages:[{role:'system',content:'Output only valid JSON. No markdown, no backticks, no explanation.'},{role:'user',content:prompt}],temperature:0.7,max_tokens:4000})
+        });
+        var data = await resp.json();
+        if(data.error) throw new Error(data.error.message);
+        var raw = data.choices[0].message.content;
+        log('✅ AI responded ('+raw.length+' chars)', 'ok');
+
+        // Parse
+        raw = raw.replace(/^```json?\s*/im,'').replace(/\s*```\s*$/im,'').trim();
+        var s = raw.indexOf('{'), e = raw.lastIndexOf('}');
+        if(s!==-1 && e>s) raw = raw.substring(s,e+1);
+        var parsed = JSON.parse(raw);
+        log('✅ JSON parsed successfully', 'ok');
+
+        // Build page HTML
+        document.getElementById('stxt').textContent = 'Building website...';
+        var sections_html = '';
+        var wa_clean = wa.replace(/[^0-9+]/g,'');
+
+        // Hero
+        var heroData = parsed.hero || {};
+        heroData.bg_img_index = 0;
+        sections_html += renderSection({...heroData, type: hero}, c, imgs, bn, wa_clean);
+        log('✅ Hero rendered: '+hero, 'ok');
+
+        // Content sections
+        var aiSecs = parsed.sections || [];
+        for(var i=0; i<secs.length; i++) {
+            var secType = secs[i];
+            var secData = aiSecs.find(s=>s.type===secType) || {type:secType};
+            secData.bg_img_index = i+1;
+            sections_html += renderSection(secData, c, imgs, bn, wa_clean);
+            log('✅ Section: '+secType, 'ok');
+        }
+
+        // WhatsApp button
+        var waBtn = wa_clean ? '<a href="https://wa.me/'+wa_clean.replace('+','')+'" style="position:fixed;bottom:24px;right:24px;z-index:9999;width:58px;height:58px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(37,211,102,0.5);text-decoration:none;" target="_blank"><svg width="28" height="28" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>' : '';
+
+        // Full page
+        var fullPage = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>'+bn+(loc?' - '+loc:'')+'</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></s'+'cript><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}img{max-width:100%;height:auto;}@media(max-width:600px){section{padding-left:20px!important;padding-right:20px!important;}.grid-cols-3{grid-template-columns:1fr!important;}.hero-split-right{display:none!important;}h1{font-size:clamp(24px,7vw,36px)!important;}}</style></head><body>'+sections_html+waBtn+'<script>document.addEventListener("DOMContentLoaded",function(){AOS.init({duration:700,once:true,offset:60});});<\/script></body></html>';
+
+        // Blob URL for preview
+        var blob = new Blob([fullPage], {type:'text/html'});
+        var url = URL.createObjectURL(blob);
+
+        document.getElementById('status').classList.remove('show');
+        document.getElementById('gen-btn').disabled = false;
+
+        // Show result
+        var resultEl = document.getElementById('result');
+        resultEl.classList.add('show');
+        resultEl.innerHTML = '<h3>✅ Website Ready!</h3><div class="page-card"><strong>📄 '+bn+' — Home Page</strong><small>'+secs.length+1+' sections | '+hero.replace('hero_','').replace('_',' ')+' hero | '+ct.replace('_',' ')+' theme</small><div class="page-btns"><a href="'+url+'" target="_blank" class="btn-sm btn-view">👁️ Preview</a><button onclick="downloadPage(\''+encodeURIComponent(fullPage)+'\',\''+bn.replace(/\s+/g,'-').toLowerCase()+'.html\')" class="btn-sm btn-edit">⬇️ Download</button></div><button onclick="shareWhatsApp(\''+url+'\',\''+bn+'\')" class="btn-share">💬 Share on WhatsApp</button></div>';
+
+        // Store page for sharing
+        window._lastPage = fullPage;
+        window._lastPageName = bn;
+        log('🎉 Website ready!', 'ok');
+
+    } catch(err) {
+        document.getElementById('status').classList.remove('show');
+        document.getElementById('gen-btn').disabled = false;
+        log('❌ Error: '+err.message, 'err');
+        document.getElementById('result').classList.add('show');
+        document.getElementById('result').innerHTML = '<div style="background:#1A0505;border:1px solid #ff6b6b;border-radius:10px;padding:16px;"><p style="color:#ff6b6b;font-size:14px;margin:0;">❌ '+err.message+'</p><p style="color:#888;font-size:12px;margin:8px 0 0;">Check API key ya dobara try karo.</p></div>';
+    }
+}
+
+function downloadPage(encoded, filename) {
+    var html = decodeURIComponent(encoded);
+    var blob = new Blob([html], {type:'text/html'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+}
+
+function shareWhatsApp(url, name) {
+    var msg = 'Hi! Maine aapke liye ek demo website banayi hai — '+name+'\n\nDekhne ke liye click karein: '+url+'\n\nPoori website ₹8,000 mein mil sakti hai!\n\n— Rishabh, WordPress Developer\n+91 88514 71308';
+    window.open('https://wa.me/?text='+encodeURIComponent(msg), '_blank');
+}
+</script>
+</body>
+</html>
